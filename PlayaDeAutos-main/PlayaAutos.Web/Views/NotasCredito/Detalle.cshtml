@@ -1,0 +1,249 @@
+@model PlayaAutos.Web.Models.NotaCreditoViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = $"Nota de Crédito {Model.NumeroNota}";
+    var subtotal = (long)Math.Round(Model.Monto / 1.10m);
+    var iva      = Model.Monto - subtotal;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Nota de Crédito @Model.NumeroNota</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/NotasCredito" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4>
+                    <i class="fa-solid fa-file-circle-minus me-2" style="color:#22c55e;"></i>
+                    Nota de Crédito
+                </h4>
+                <p>@Model.NumeroNota</p>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-8">
+
+                <!-- Encabezado nota -->
+                <div class="pa-card p-4 mb-3">
+                    <!-- Banner título -->
+                    <div class="nota-header mb-4">
+                        <div class="nota-titulo">NOTA DE CRÉDITO</div>
+                        <div class="nota-numero">N° @Model.NumeroNota</div>
+                        <div style="font-size:0.8rem;color:var(--pa-muted);margin-top:4px;">
+                            Timbrado: <strong>@Model.Timbrado</strong>
+                        </div>
+                    </div>
+
+                    <!-- Datos: cliente + documento -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="section-card-inner">
+                                <div class="section-card-title">
+                                    <i class="fa-solid fa-user me-1"></i> Información del cliente
+                                </div>
+                                <div class="detalle-row">
+                                    <span class="detalle-label">Nombre</span>
+                                    <span class="detalle-valor">@Model.Cliente</span>
+                                </div>
+                                <div class="detalle-row">
+                                    <span class="detalle-label">CI / RUC</span>
+                                    <span class="detalle-valor">@Model.ClienteRUC</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(Model.ClienteDireccion))
+                                {
+                                    <div class="detalle-row">
+                                        <span class="detalle-label">Domicilio</span>
+                                        <span class="detalle-valor">@Model.ClienteDireccion</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.ClienteTelefono))
+                                {
+                                    <div class="detalle-row">
+                                        <span class="detalle-label">Teléfono</span>
+                                        <span class="detalle-valor">@Model.ClienteTelefono</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="section-card-inner">
+                                <div class="section-card-title">
+                                    <i class="fa-solid fa-file-lines me-1"></i> Detalle del documento
+                                </div>
+                                <div class="detalle-row">
+                                    <span class="detalle-label">Fecha emisión</span>
+                                    <span class="detalle-valor">@Model.FechaEmision.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(Model.NumeroFactura))
+                                {
+                                    <div class="detalle-row">
+                                        <span class="detalle-label">Factura ref.</span>
+                                        <span class="detalle-valor" style="font-family:monospace;">
+                                            @Model.NumeroFactura
+                                        </span>
+                                    </div>
+                                }
+                                <div class="detalle-row">
+                                    <span class="detalle-label">Motivo</span>
+                                    <span class="detalle-valor">@Model.Motivo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de artículos -->
+                    <div style="border:1px solid var(--pa-border);border-radius:8px;overflow:hidden;margin-bottom:1rem;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#1B6B3A;color:white;">
+                                    <th style="padding:8px 12px;font-size:0.8rem;text-align:center;width:40px;">Cód.</th>
+                                    <th style="padding:8px 12px;font-size:0.8rem;">Descripción</th>
+                                    <th style="padding:8px 12px;font-size:0.8rem;text-align:center;width:60px;">U/M</th>
+                                    <th style="padding:8px 12px;font-size:0.8rem;text-align:center;width:50px;">Cant.</th>
+                                    <th style="padding:8px 12px;font-size:0.8rem;text-align:right;width:100px;">Prec. Unit.</th>
+                                    <th style="padding:8px 12px;font-size:0.8rem;text-align:right;width:120px;">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background:var(--pa-bg);">
+                                    <td style="padding:16px 12px;text-align:center;font-size:0.85rem;">1</td>
+                                    <td style="padding:16px 12px;">
+                                        @if (!string.IsNullOrEmpty(Model.VehiculoPermuta))
+                                        {
+                                            <div style="font-weight:600;font-size:0.88rem;">@Model.VehiculoPermuta</div>
+                                            <div style="font-size:0.78rem;color:var(--pa-muted);margin-top:4px;">
+                                                <i class="fa-solid fa-arrows-rotate fa-xs me-1" style="color:#22c55e;"></i>
+                                                Vehículo recibido en permuta por:
+                                                <strong>@Model.VehiculoVenta</strong>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div style="font-weight:600;">Crédito por permuta de vehículo</div>
+                                            <div style="font-size:0.78rem;color:var(--pa-muted);margin-top:4px;">
+                                                Venta: <strong>@Model.VehiculoVenta</strong>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td style="padding:16px 12px;text-align:center;font-size:0.82rem;">unidad</td>
+                                    <td style="padding:16px 12px;text-align:center;font-size:0.85rem;">1</td>
+                                    <td style="padding:16px 12px;text-align:right;color:var(--pa-muted);font-size:0.82rem;">—</td>
+                                    <td style="padding:16px 12px;text-align:right;font-weight:700;color:#22c55e;font-size:0.92rem;">
+                                        Gs. @Model.Monto.ToString("N0")
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Totales -->
+                    <div style="display:flex;justify-content:flex-end;">
+                        <div style="min-width:260px;background:var(--pa-bg);border-radius:8px;padding:1rem;border:1px solid var(--pa-border);">
+                            <div class="detalle-row">
+                                <span class="detalle-label">Subtotal</span>
+                                <span class="detalle-valor">Gs. @subtotal.ToString("N0")</span>
+                            </div>
+                            <div class="detalle-row">
+                                <span class="detalle-label">IVA (10%)</span>
+                                <span class="detalle-valor">Gs. @iva.ToString("N0")</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;
+                                        padding:0.75rem 0 0;border-top:2px solid #22c55e;margin-top:0.25rem;">
+                                <span style="font-weight:800;font-size:0.9rem;">TOTAL CRÉDITO</span>
+                                <span style="font-size:1.3rem;font-weight:800;color:#22c55e;">
+                                    Gs. @Model.Monto.ToString("N0")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel lateral -->
+            <div class="col-lg-4">
+                <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                    <div class="section-title mb-3">
+                        <i class="fa-solid fa-circle-info me-1" style="color:#22c55e;"></i>
+                        Acciones
+                    </div>
+
+                    <a href="/NotasCredito/DescargarPDF/@Model.NotaCreditoId"
+                       class="btn-pa-primary w-100 mb-2"
+                       style="background:#22c55e;border-color:#22c55e;">
+                        <i class="fa-solid fa-file-pdf me-2"></i> Descargar PDF
+                    </a>
+
+                    @if (Model.VentaId > 0)
+                    {
+                        <a href="/Facturas?ventaId=@Model.VentaId"
+                           class="btn-pa-ghost w-100 mb-2">
+                            <i class="fa-solid fa-file-invoice me-2"></i> Ver factura de venta
+                        </a>
+                    }
+
+                    <hr style="border-color:var(--pa-border);" />
+
+                    <div style="font-size:0.82rem;color:var(--pa-muted);">
+                        <p>
+                            <i class="fa-solid fa-check-circle me-2" style="color:#22c55e;"></i>
+                            Nota generada automáticamente al registrar la permuta.
+                        </p>
+                        <p style="margin:0;">
+                            <i class="fa-solid fa-shield-halved me-2" style="color:var(--pa-info);"></i>
+                            Documento fiscal válido.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .action-btn {
+        width: 34px; height: 34px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border); background: transparent;
+        color: var(--pa-muted); text-decoration: none;
+        transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+    .nota-header { border-bottom: 2px solid #22c55e; padding-bottom: 1rem; }
+    .nota-titulo { font-size: 1.7rem; font-weight: 800; color: #22c55e; letter-spacing: -0.5px; }
+    .nota-numero { font-family: monospace; font-size: 1.1rem; font-weight: 700; color: var(--pa-text); }
+    .section-card-inner {
+        background: var(--pa-bg); border: 1px solid var(--pa-border);
+        border-radius: 8px; padding: 1rem; height: 100%;
+    }
+    .section-card-title {
+        font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .5px; color: #22c55e; margin-bottom: 0.75rem;
+    }
+    .detalle-row {
+        display: flex; justify-content: space-between; padding: 0.45rem 0;
+        border-bottom: 1px solid var(--pa-border); font-size: 0.87rem;
+    }
+    .detalle-row:last-child { border-bottom: none; }
+    .detalle-label { color: var(--pa-muted); }
+    .detalle-valor { font-weight: 600; color: var(--pa-text); text-align: right; }
+</style>
+</body>
+</html>

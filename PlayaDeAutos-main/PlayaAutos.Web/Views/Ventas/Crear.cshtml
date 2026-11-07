@@ -1,0 +1,906 @@
+@model PlayaAutos.Web.Models.VentaViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Nueva Venta";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Nueva Venta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center gap-3">
+                <a href="/Ventas" class="action-btn" style="flex-shrink:0;" title="Volver">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h4><i class="fa-solid fa-handshake me-2" style="color:var(--pa-accent);"></i>Nueva Venta</h4>
+                    <p>Complete todos los campos obligatorios marcados con *</p>
+                </div>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Corrija los errores antes de continuar.</strong>
+                    @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors).Take(3))
+                    {
+                        <div style="font-size:0.82rem;margin-top:2px;">@err.ErrorMessage</div>
+                    }
+                </div>
+            }
+
+            <form asp-action="Crear" method="post" id="formCrear" novalidate enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+
+                <script id="tasacionesData" type="application/json">
+                                    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TasacionesAprobadas,
+                                                                    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }))
+                </script>
+                <script id="formasPagoData" type="application/json">
+                                    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                                                    Model.FormasPago.Select(f => new { value = f.Value, text = f.Text })
+                                    ))
+                </script>
+                <script id="tiposVentaData" type="application/json">
+                                    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                                            Model.TiposVentaData,
+                                            new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }
+                                    ))
+                </script>
+
+                <div class="row g-3">
+
+                    <!-- ── Columna principal ── -->
+                    <div class="col-lg-8">
+
+                        <!-- Partes de la venta -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-handshake me-1" style="color:var(--pa-accent);"></i>
+                                Partes de la venta
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="ClienteId" class="pa-label">Cliente *</label>
+                                    <select asp-for="ClienteId" asp-items="Model.Clientes"
+                                            class="pa-input" id="selectCliente">
+                                        <option value="">— Seleccione un cliente —</option>
+                                    </select>
+                                    <span asp-validation-for="ClienteId" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="VehiculoId" class="pa-label">Vehículo disponible *</label>
+                                    <select asp-for="VehiculoId" asp-items="Model.Vehiculos"
+                                            class="pa-input" id="selectVehiculo">
+                                        <option value="">— Seleccione un vehículo —</option>
+                                    </select>
+                                    <span asp-validation-for="VehiculoId" class="val-msg"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Condiciones de venta -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-tags me-1" style="color:var(--pa-accent);"></i>
+                                Condiciones de venta
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="FechaVenta" class="pa-label">Fecha de venta *</label>
+                                    <input asp-for="FechaVenta" type="date" class="pa-input" />
+                                    <span asp-validation-for="FechaVenta" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="TipoVentaId" class="pa-label">Tipo de venta *</label>
+                                    <select asp-for="TipoVentaId" class="pa-input" id="selectTipoVenta">
+                                        <option value="">— Seleccione —</option>
+                                    </select>
+                                    <span asp-validation-for="TipoVentaId" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="MontoTotal" class="pa-label">Monto total (Gs.) *</label>
+                                    <div class="input-wrapper">
+                                        <input asp-for="MontoTotal" type="number" class="pa-input"
+                                               min="1" placeholder="0"
+                                               style="padding-left:2.8rem !important;"
+                                               id="inputMontoTotal" />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <span asp-validation-for="MontoTotal" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="MontoEntrada" class="pa-label">Monto de entrada (Gs.)</label>
+                                    <small style="color:var(--pa-muted);font-size:0.75rem;">
+                                        Incluye efectivo + valor de permuta. Ej: 20M efectivo + 35M permuta = 55M entrada
+                                    </small>
+                                    <div class="input-wrapper">
+                                        <input asp-for="MontoEntrada" type="number" class="pa-input"
+                                               min="0" placeholder="0"
+                                               style="padding-left:2.8rem !important;"
+                                               id="inputMontoEntrada" />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <span asp-validation-for="MontoEntrada" class="val-msg"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financiación -->
+                        <div class="pa-card p-4 mb-3" id="seccionFinanciacion" style="display:none;">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-calendar-days me-1" style="color:var(--pa-accent);"></i>
+                                Financiación
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="SaldoFinanciado" class="pa-label">Saldo financiado (Gs.)</label>
+                                    <div class="input-wrapper">
+                                        <input asp-for="SaldoFinanciado" type="number" class="pa-input"
+                                               min="0" placeholder="0"
+                                               style="padding-left:2.8rem !important;"
+                                               id="inputSaldoFinanciado" readonly />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <small style="color:var(--pa-muted);font-size:0.75rem;">Total − Entrada</small>
+                                    <span asp-validation-for="SaldoFinanciado" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="TasaInteres" class="pa-label">Tasa de interés (%)</label>
+                                    <input asp-for="TasaInteres" type="number" class="pa-input"
+                                           min="0" max="100" step="0.01" placeholder="Ej: 12.5"
+                                           id="inputTasaInteres" />
+                                    <span asp-validation-for="TasaInteres" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="CantidadCuotas" class="pa-label">Cantidad de cuotas *</label>
+                                    <input asp-for="CantidadCuotas" type="number" class="pa-input"
+                                           min="1" max="120" placeholder="Ej: 12"
+                                           id="inputCantidadCuotas" />
+                                    <span asp-validation-for="CantidadCuotas" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="pa-label">% Recargo por atraso</label>
+                                    <input asp-for="PorcentajeRecargo" type="number" class="pa-input"
+                                           min="0" max="100" step="0.01" placeholder="0" />
+                                    <small style="color:var(--pa-muted);font-size:0.73rem;">
+                                        Opcional. Se aplica a cuotas vencidas.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── Formas de pago ── -->
+                        <div class="pa-card p-4">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-money-bill-wave me-1" style="color:var(--pa-accent);"></i>
+                                Formas de pago
+                            </div>
+
+                            <div id="indicadorPagos"
+                                 style="background:rgba(255,255,255,.04);border:1px solid var(--pa-border);
+                                border-radius:10px;padding:.65rem 1rem;margin-bottom:1rem;
+                                font-size:0.84rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+                                <span style="color:var(--pa-muted);">Entrada requerida:</span>
+                                <strong id="indEntrada" style="color:var(--pa-text);">Gs. 0</strong>
+                                <span style="color:var(--pa-muted);">|&nbsp; Pagado:</span>
+                                <strong id="indPagado" style="color:#22c55e;">Gs. 0</strong>
+                                <span id="indDiff" style="margin-left:auto;"></span>
+                            </div>
+
+                            <div id="pagosWrap" style="display:none;margin-bottom:1rem;">
+                                <div style="overflow-x:auto;border:1px solid var(--pa-border);border-radius:10px;">
+                                    <table style="width:100%;border-collapse:collapse;font-size:0.83rem;" id="tablaPagos">
+                                        <thead>
+                                            <tr style="background:var(--pa-bg);">
+                                                <th style="padding:.5rem .8rem;text-align:left;color:var(--pa-muted);font-weight:600;">Forma pago</th>
+                                                <th style="padding:.5rem .8rem;text-align:right;color:var(--pa-muted);font-weight:600;">Monto</th>
+                                                <th style="padding:.5rem .8rem;text-align:left;color:var(--pa-muted);font-weight:600;">Comprobante</th>
+                                                <th style="padding:.5rem .8rem;text-align:left;color:var(--pa-muted);font-weight:600;">Observación</th>
+                                                <th style="padding:.5rem .8rem;text-align:left;color:var(--pa-muted);font-weight:600;">Tasación</th>
+                                                <th style="padding:.5rem .8rem;width:36px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pagosTbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,.025);border:1px dashed var(--pa-border);
+                                border-radius:10px;padding:1rem;" id="addPagoForm">
+                                <div style="font-size:0.8rem;color:var(--pa-muted);margin-bottom:.75rem;font-weight:600;">
+                                    <i class="fa-solid fa-plus-circle me-1" style="color:var(--pa-accent);"></i>
+                                    Agregar forma de pago
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="pa-label" style="font-size:0.78rem;">Forma de pago *</label>
+                                        <select id="addFormaPago" class="pa-input" style="font-size:0.85rem;">
+                                            <option value="">— Seleccione —</option>
+                                            @foreach (var f in Model.FormasPago)
+                                            {
+                                                <option value="@f.Value" data-nombre="@f.Text">@f.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="pa-label" style="font-size:0.78rem;">Monto (Gs.) *</label>
+                                        <input type="number" id="addMonto" class="pa-input"
+                                               min="1" placeholder="0" style="font-size:0.85rem;" />
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="pa-label" style="font-size:0.78rem;">Observación</label>
+                                        <input type="text" id="addObservacion" class="pa-input"
+                                               placeholder="Opcional" style="font-size:0.85rem;" />
+                                    </div>
+                                    <div class="col-md-12" id="wrapTasacion" style="display:none;">
+                                        <label class="pa-label" style="font-size:0.78rem;">
+                                            <i class="fa-solid fa-right-left me-1" style="color:var(--pa-accent);"></i>
+                                            Tasación (permuta) — solo tasaciones aprobadas del cliente seleccionado
+                                        </label>
+                                        <select id="addTasacion" class="pa-input" style="font-size:0.85rem;">
+                                            <option value="">— Seleccione tasación —</option>
+                                        </select>
+                                        <small id="msgSinTasacion" style="display:none;color:#ca8a04;font-size:0.75rem;">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                            No hay tasaciones aprobadas para este cliente.
+                                            <a href="/Tasaciones/Crear" target="_blank" style="color:#ca8a04;font-weight:600;">
+                                                Crear tasación <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i>
+                                            </a>
+                                        </small>
+                                        <div id="infoPermuta" style="display:none;margin-top:.5rem;padding:.5rem .75rem;
+                                            background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);
+                                            border-radius:7px;font-size:0.8rem;color:#818cf8;">
+                                            <i class="fa-solid fa-info-circle me-1"></i>
+                                            Valor a descontar: <strong id="textoValorPermuta">Gs. 0</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="pa-label" style="font-size:0.78rem;">Comprobante (opcional)</label>
+                                        <div id="fileInputWrapper">
+                                            <input type="file" id="tempFileInput"
+                                                   accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                                   class="pa-input" style="font-size:0.82rem;" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="button" id="btnAgregarPago" onclick="agregarPago()"
+                                                class="btn-pa-primary" style="width:100%;">
+                                            <i class="fa-solid fa-plus"></i> Agregar pago
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="errorPago" style="display:none;font-size:0.78rem;color:#f87191;margin-top:.5rem;"></div>
+                            </div>
+
+                            <div id="hiddenFilesContainer" style="display:none;"></div>
+                            <div id="pagosHiddenContainer"></div>
+
+                            <div id="errorPagosGlobal" style="display:none;font-size:0.82rem;color:#f87191;margin-top:.5rem;
+                                padding:.5rem .75rem;background:rgba(239,68,68,.08);
+                                border-radius:7px;border:1px solid rgba(239,68,68,.2);">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ── Columna derecha: Resumen ── -->
+                    <div class="col-lg-4">
+                        <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-calculator me-1" style="color:var(--pa-accent);"></i>
+                                Resumen
+                            </div>
+
+                            <div style="font-size:0.85rem;color:var(--pa-muted);margin-bottom:1rem;">
+                                <i class="fa-solid fa-user-tie me-2" style="color:var(--pa-info);"></i>
+                                Vendedor: <strong style="color:var(--pa-text);">
+                                @(Context.Session.GetString("Nombre") ?? "—")
+                            </strong>
+                        </div>
+
+                        <hr style="border-color:var(--pa-border);" />
+
+                        <div style="font-size:0.85rem;">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span style="color:var(--pa-muted);">Monto total:</span>
+                                <strong id="resTotal">Gs. 0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span style="color:var(--pa-muted);">− Entrada:</span>
+                                <strong id="resEntrada">Gs. 0</strong>
+                            </div>
+                            <div id="wrapResPermuta" style="display:none;" class="d-flex justify-content-between mb-2">
+                                <span style="color:#818cf8;">− Permuta:</span>
+                                <strong id="resPermuta" style="color:#818cf8;">Gs. 0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2" style="border-top:1px solid var(--pa-border);padding-top:.5rem;">
+                                <span style="color:var(--pa-muted);">= Saldo financiado:</span>
+                                <strong id="resSaldo">Gs. 0</strong>
+                            </div>
+                        </div>
+
+                        <div id="resumenCuotas" style="display:none;">
+                            <hr style="border-color:var(--pa-border);" />
+                            <div style="font-size:0.82rem;margin-bottom:.5rem;font-weight:600;color:var(--pa-text);">
+                                <i class="fa-solid fa-calendar-days me-1" style="color:var(--pa-accent);"></i>
+                                Detalle de cuotas
+                            </div>
+                            <div style="font-size:0.83rem;">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color:var(--pa-muted);">Cantidad:</span>
+                                    <strong id="resCantCuotas">—</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color:var(--pa-muted);">Valor por cuota:</span>
+                                    <strong id="resValorCuota">—</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span style="color:var(--pa-muted);">Total con interés:</span>
+                                    <strong id="resTotalConInteres" style="color:var(--pa-success);">—</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span style="color:var(--pa-muted);">Ganancia por interés:</span>
+                                    <strong id="resGananciaInteres" style="color:#22c55e;">—</strong>
+                                </div>
+                            </div>
+                            <div id="tablaCuotasWrap" style="display:none;margin-top:.75rem;">
+                                <div style="font-size:0.78rem;color:var(--pa-muted);margin-bottom:.4rem;">Proyección mensual:</div>
+                                <div style="max-height:160px;overflow-y:auto;border:1px solid var(--pa-border);border-radius:8px;">
+                                    <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+                                        <thead>
+                                            <tr style="background:var(--pa-bg);">
+                                                <th style="padding:.35rem .6rem;text-align:left;color:var(--pa-muted);font-weight:600;">Cuota</th>
+                                                <th style="padding:.35rem .6rem;text-align:right;color:var(--pa-muted);font-weight:600;">Vencimiento</th>
+                                                <th style="padding:.35rem .6rem;text-align:right;color:var(--pa-muted);font-weight:600;">Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cuerpoTablaCuotas"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <button type="button" id="btnToggleCuotas"
+                                    style="width:100%;margin-top:.6rem;padding:.35rem;background:transparent;
+                                border:1px solid var(--pa-border);border-radius:7px;font-size:0.78rem;
+                                color:var(--pa-muted);cursor:pointer;"
+                                    onclick="toggleTablaCuotas()">
+                                <i class="fa-solid fa-chevron-down fa-xs me-1" id="iconToggleCuotas"></i>
+                                Ver proyección por cuota
+                            </button>
+                        </div>
+
+                        <hr style="border-color:var(--pa-border);" />
+
+                        <div style="font-size:0.82rem;color:var(--pa-muted);">
+                            <p>
+                                <i class="fa-solid fa-check-circle me-2" style="color:var(--pa-success);"></i>
+                                Solo vehículos con estado <em>Disponible</em> aparecen en el listado.
+                            </p>
+                            <p style="margin:0;">
+                                <i class="fa-solid fa-triangle-exclamation me-2" style="color:var(--pa-warning);"></i>
+                                Al registrar, el vehículo pasa automáticamente a <em>Vendido</em>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Ventas" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnGuardar">
+                    <i class="fa-solid fa-floppy-disk"></i> Registrar venta
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+        .val-msg {
+            font-size: 0.78rem;
+            color: #f87191;
+            margin-top: 3px;
+            display: block;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--pa-border);
+            background: transparent;
+            color: var(--pa-muted);
+            text-decoration: none;
+            transition: background var(--ease);
+        }
+
+            .action-btn:hover {
+                background: rgba(255,255,255,0.06);
+                color: var(--pa-text);
+            }
+
+        #tablaPagos tbody tr:not(:last-child) td {
+            border-bottom: 1px solid var(--pa-border);
+        }
+
+        #tablaPagos tbody td {
+            padding: .45rem .8rem;
+            vertical-align: middle;
+        }
+
+        #cuerpoTablaCuotas tr:not(:last-child) td {
+            border-bottom: 1px solid var(--pa-border);
+        }
+
+        #cuerpoTablaCuotas td {
+            padding: .32rem .6rem;
+        }
+
+        .btn-quitar-pago {
+            width: 26px;
+            height: 26px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            border: 1px solid var(--pa-border);
+            background: transparent;
+            cursor: pointer;
+            color: var(--pa-muted);
+            transition: background var(--ease), border-color var(--ease);
+        }
+
+            .btn-quitar-pago:hover {
+                background: rgba(239,68,68,.12);
+                border-color: #ef4444;
+                color: #ef4444;
+            }
+</style>
+
+<script>
+        // ── Datos embebidos ───────────────────────────────────────────────────
+        const allTasaciones = JSON.parse(document.getElementById('tasacionesData').textContent);
+        const allFormasPago = JSON.parse(document.getElementById('formasPagoData').textContent);
+        const tiposVentaList = JSON.parse(document.getElementById('tiposVentaData').textContent);
+
+        // ── Estado de pagos ───────────────────────────────────────────────────
+        let pagos = [];
+        let pagoCounter = 0;
+
+        const fmt = n => 'Gs. ' + Math.round(Number(n) || 0).toLocaleString('es-PY');
+
+        // ── Cargar tipos de venta ──────────────────────────────────────────────
+        function cargarTiposVenta() {
+            const select = document.getElementById('selectTipoVenta');
+            select.innerHTML = '<option value="">— Seleccione —</option>';
+            tiposVentaList.forEach(tipo => {
+                const opt = document.createElement('option');
+                opt.value = tipo.tipoVentaId;
+                opt.textContent = tipo.descripcion;
+                opt.dataset.financiacion = tipo.requiereFinanciacion ? 'credito' : 'contado';
+                select.appendChild(opt);
+            });
+        }
+
+        function getMontoEntrada() {
+            const entrada = parseInt(document.getElementById('inputMontoEntrada').value) || 0;
+            const total   = parseInt(document.getElementById('inputMontoTotal').value)   || 0;
+            return entrada > 0 ? entrada : total;
+        }
+
+        function getValorPermuta() {
+            return pagos
+                .filter(p => p.tasId)
+                .reduce((sum, p) => sum + (p.tasValor || 0), 0);
+        }
+
+        // ── Filtrar tasaciones por cliente
+        function actualizarTasacionesPorCliente() {
+            const clienteId = parseInt(document.getElementById('selectCliente').value) || 0;
+            const sel = document.getElementById('addTasacion');
+            sel.innerHTML = '<option value="">— Seleccione tasación —</option>';
+
+            const filtradas = clienteId
+                ? allTasaciones.filter(t => t.clienteId === clienteId)
+                : allTasaciones;
+
+            filtradas.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.tasacionVehiculoId;
+                opt.textContent = t.label;
+                opt.dataset.precio = t.precioVenta;
+                opt.dataset.valorTasacion = t.valorTasacion;
+                sel.appendChild(opt);
+            });
+
+            const msgSin = document.getElementById('msgSinTasacion');
+            if (clienteId && filtradas.length === 0) {
+                msgSin.style.display = 'block';
+            } else {
+                msgSin.style.display = 'none';
+            }
+        }
+
+        // ── Detectar si forma pago es Permuta
+        function esPermuta(formaPagoId) {
+            const fp = allFormasPago.find(f => f.value == formaPagoId);
+            return fp && fp.text.toLowerCase().includes('permuta');
+        }
+
+        document.getElementById('addFormaPago').addEventListener('change', function () {
+            const wrap = document.getElementById('wrapTasacion');
+            if (esPermuta(this.value)) {
+                wrap.style.display = '';
+                actualizarTasacionesPorCliente();
+            } else {
+                wrap.style.display = 'none';
+                document.getElementById('addTasacion').value = '';
+                document.getElementById('infoPermuta').style.display = 'none';
+            }
+        });
+
+        document.getElementById('addTasacion').addEventListener('change', function () {
+            const sel = this;
+            const opt = sel.options[sel.selectedIndex];
+            const valor = parseInt(opt?.dataset.valorTasacion) || 0;
+            const info = document.getElementById('infoPermuta');
+            if (this.value && valor > 0) {
+                document.getElementById('textoValorPermuta').textContent = fmt(valor);
+                info.style.display = '';
+            } else {
+                info.style.display = 'none';
+            }
+        });
+
+        document.getElementById('selectCliente').addEventListener('change', function () {
+            if (document.getElementById('wrapTasacion').style.display !== 'none') {
+                actualizarTasacionesPorCliente();
+            }
+        });
+
+        // ── Agregar pago ya validado
+        function agregarPago() {
+            const formaPagoId = document.getElementById('addFormaPago').value;
+            const formaPagoNombre = document.getElementById('addFormaPago')
+                .options[document.getElementById('addFormaPago').selectedIndex]?.text ?? '';
+            const monto = parseInt(document.getElementById('addMonto').value) || 0;
+            const obs = document.getElementById('addObservacion').value.trim();
+            const tasId = document.getElementById('addTasacion').value || null;
+            const tasSelOpt = document.getElementById('addTasacion').options[
+                document.getElementById('addTasacion').selectedIndex];
+            const tasNombre = tasId ? (tasSelOpt?.text ?? '') : null;
+            const tasValor  = tasId ? (parseInt(tasSelOpt?.dataset.valorTasacion) || 0) : 0;
+            const fileInput = document.getElementById('tempFileInput');
+            const hasFile = fileInput && fileInput.files.length > 0;
+            const fileName = hasFile ? fileInput.files[0].name : null;
+
+            const errEl = document.getElementById('errorPago');
+            const montoTotal = parseInt(document.getElementById('inputMontoTotal').value) || 0;
+            const montoEntrada = getMontoEntrada();
+            const pagadoActual = pagos.reduce((sum, p) => sum + p.monto, 0);
+
+            //Forma de pago seleccionada
+            if (!formaPagoId) {
+                errEl.textContent = 'Seleccione la forma de pago.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            //Monto mayor a 0
+            if (monto <= 0) {
+                errEl.textContent = 'El monto debe ser mayor a cero.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            //Permuta requiere tasación
+            if (esPermuta(formaPagoId) && !tasId) {
+                errEl.textContent = 'Para permuta debe seleccionar una tasación aprobada.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            //La permuta no puede superar el monto total de la venta
+            if (tasId && monto > montoTotal) {
+                errEl.textContent = `La permuta (Gs. ${monto.toLocaleString()}) no puede superar el monto total de la venta (Gs. ${montoTotal.toLocaleString()}).`;
+                errEl.style.display = 'block';
+                return;
+            }
+
+            //Cada pago individual no puede superar el monto de entrada
+            if (monto > montoEntrada) {
+                errEl.textContent = `El pago de Gs. ${monto.toLocaleString()} supera el monto de entrada (Gs. ${montoEntrada.toLocaleString()}).`;
+                errEl.style.display = 'block';
+                return;
+            }
+
+            //suma de pagos no puede superar el monto de entrada
+            if (pagadoActual + monto > montoEntrada) {
+                errEl.textContent = `La suma de los pagos (Gs. ${(pagadoActual + monto).toLocaleString()}) supera el monto de entrada (Gs. ${montoEntrada.toLocaleString()}).`;
+                errEl.style.display = 'block';
+                return;
+            }
+
+            errEl.style.display = 'none';
+
+            const idx = pagoCounter;
+
+            if (hasFile) {
+                const fc = document.getElementById('hiddenFilesContainer');
+                fileInput.id = 'fileSlot_' + idx;
+                fileInput.name = 'ComprobanteFiles[' + idx + ']';
+                fileInput.style.display = 'none';
+                fc.appendChild(fileInput);
+
+                const newFi = document.createElement('input');
+                newFi.type = 'file';
+                newFi.id = 'tempFileInput';
+                newFi.accept = '.jpg,.jpeg,.png,.webp,.pdf';
+                newFi.className = 'pa-input';
+                newFi.style.fontSize = '0.82rem';
+                document.getElementById('fileInputWrapper').innerHTML = '';
+                document.getElementById('fileInputWrapper').appendChild(newFi);
+            }
+
+            pagos.push({ idx, formaPagoId, nombre: formaPagoNombre, monto, obs, tasId, tasNombre, tasValor, fileName });
+            pagoCounter++;
+
+            document.getElementById('addFormaPago').value = '';
+            document.getElementById('addMonto').value = '';
+            document.getElementById('addObservacion').value = '';
+            document.getElementById('addTasacion').value = '';
+            document.getElementById('wrapTasacion').style.display = 'none';
+            if (!hasFile) {
+                const fi = document.getElementById('tempFileInput');
+                if (fi) fi.value = '';
+            }
+
+            renderPagos();
+            actualizarIndicador();
+            actualizarResumen();
+        }
+
+        function eliminarPago(listIdx) {
+            const pago = pagos[listIdx];
+            const slot = document.getElementById('fileSlot_' + pago.idx);
+            if (slot) slot.remove();
+
+            pagos.splice(listIdx, 1);
+            renderPagos();
+            actualizarIndicador();
+            actualizarResumen();
+        }
+
+        function renderPagos() {
+            const tbody = document.getElementById('pagosTbody');
+            tbody.innerHTML = '';
+            const wrap = document.getElementById('pagosWrap');
+
+            if (pagos.length === 0) { wrap.style.display = 'none'; return; }
+            wrap.style.display = '';
+
+            pagos.forEach((p, i) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight:600;">${escHtml(p.nombre)}</td>
+                    <td style="text-align:right;font-weight:600;">${fmt(p.monto)}</td>
+                    <td style="color:var(--pa-muted);font-size:0.78rem;">${p.fileName ? '📎 ' + escHtml(p.fileName) : '—'}</td>
+                    <td style="color:var(--pa-muted);font-size:0.78rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(p.obs || '—')}</td>
+                    <td style="color:var(--pa-muted);font-size:0.78rem;">${p.tasNombre ? '🔄 ' + escHtml(p.tasNombre) : '—'}</td>
+                    <td>
+                        <button type="button" class="btn-quitar-pago" onclick="eliminarPago(${i})" title="Quitar">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function actualizarIndicador() {
+            const entrada = getMontoEntrada();
+            const pagado  = pagos.reduce((sum, p) => sum + p.monto, 0);
+            const diff    = entrada - pagado;
+
+            document.getElementById('indEntrada').textContent = fmt(entrada);
+            document.getElementById('indPagado').textContent  = fmt(pagado);
+
+            const diffEl = document.getElementById('indDiff');
+            const btnGuardar = document.getElementById('btnGuardar');
+            if (diff === 0 && entrada > 0) {
+                diffEl.innerHTML = '<span style="color:#22c55e;font-weight:600;"><i class="fa-solid fa-check-circle me-1"></i>Completo</span>';
+                if (btnGuardar) btnGuardar.disabled = false;
+            } else if (diff > 0) {
+                diffEl.innerHTML = `<span style="color:#ca8a04;font-weight:600;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Faltan Gs. ${diff.toLocaleString('es-PY')}</span>`;
+                if (btnGuardar) btnGuardar.disabled = true;
+            } else if (diff < 0) {
+                diffEl.innerHTML = `<span style="color:#ef4444;font-weight:600;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Excede Gs. ${Math.abs(diff).toLocaleString('es-PY')}</span>`;
+                if (btnGuardar) btnGuardar.disabled = true;
+            } else {
+                diffEl.innerHTML = '';
+            }
+        }
+
+        // ── Inyectar hidden inputs antes del submit ───────────────────────────
+        document.getElementById('formCrear').addEventListener('submit', function (e) {
+            const container = document.getElementById('pagosHiddenContainer');
+            container.innerHTML = '';
+
+            pagos.forEach((p, i) => {
+                const add = (name, val) => {
+                    const h = document.createElement('input');
+                    h.type = 'hidden';
+                    h.name = name;
+                    h.value = val ?? '';
+                    container.appendChild(h);
+                };
+                add(`Pagos[${i}].FormaPagoId`, p.formaPagoId);
+                add(`Pagos[${i}].Monto`, p.monto);
+                add(`Pagos[${i}].Observacion`, p.obs);
+                if (p.tasId) add(`Pagos[${i}].TasacionVehiculoId`, p.tasId);
+
+                const slot = document.getElementById('fileSlot_' + p.idx);
+                if (slot) slot.name = `ComprobanteFiles[${i}]`;
+            });
+
+            const entrada = getMontoEntrada();
+            const pagado  = pagos.reduce((sum, p) => sum + p.monto, 0);
+            const errGlobal = document.getElementById('errorPagosGlobal');
+
+            if (pagos.length === 0) {
+                e.preventDefault();
+                errGlobal.textContent = 'Debe agregar al menos una forma de pago antes de registrar la venta.';
+                errGlobal.style.display = 'block';
+                errGlobal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            if (entrada > 0 && pagado !== entrada) {
+                e.preventDefault();
+                errGlobal.textContent = `La suma de los pagos (Gs. ${pagado.toLocaleString('es-PY')}) debe ser igual al monto de entrada (Gs. ${entrada.toLocaleString('es-PY')}).`;
+                errGlobal.style.display = 'block';
+                errGlobal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            errGlobal.style.display = 'none';
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+        });
+
+        // ── Resumen financiero ────────────────────────────────────────────────
+        function actualizarResumen() {
+            const total        = parseInt(document.getElementById('inputMontoTotal').value)    || 0;
+            const entradaInput = parseInt(document.getElementById('inputMontoEntrada').value)  || 0;
+            const tasa         = parseFloat(document.getElementById('inputTasaInteres')?.value) || 0;
+            const cuotas       = parseInt(document.getElementById('inputCantidadCuotas')?.value) || 0;
+            const valorPermuta = getValorPermuta();
+            const entrada      = entradaInput > 0 ? entradaInput : total;
+            const saldo        = Math.max(0, total - entrada);
+
+            const inputSaldo = document.getElementById('inputSaldoFinanciado');
+            if (inputSaldo) inputSaldo.value = saldo > 0 ? saldo : '';
+
+            document.getElementById('resTotal').textContent   = fmt(total);
+            document.getElementById('resEntrada').textContent = fmt(entrada);
+            document.getElementById('resSaldo').textContent   = fmt(saldo);
+
+            const wrapPermuta = document.getElementById('wrapResPermuta');
+            if (valorPermuta > 0) {
+                document.getElementById('resPermuta').textContent = fmt(valorPermuta);
+                wrapPermuta.style.display = '';
+            } else {
+                wrapPermuta.style.display = 'none';
+            }
+
+            const esCredito = document.getElementById('seccionFinanciacion').style.display !== 'none';
+            if (!esCredito || saldo <= 0 || cuotas <= 0) {
+                document.getElementById('resumenCuotas').style.display = 'none';
+                actualizarIndicador();
+                return;
+            }
+
+            const factor          = 1 + (tasa / 100);
+            const totalConInteres = saldo * factor;
+            const valorCuota      = totalConInteres / cuotas;
+            const ganancia        = totalConInteres - saldo;
+
+            document.getElementById('resCantCuotas').textContent     = cuotas + ' cuota(s)';
+            document.getElementById('resValorCuota').textContent     = fmt(valorCuota);
+            document.getElementById('resTotalConInteres').textContent = fmt(totalConInteres);
+            document.getElementById('resGananciaInteres').textContent = '+ ' + fmt(ganancia);
+            document.getElementById('resumenCuotas').style.display   = '';
+
+            generarTablaCuotas(cuotas, valorCuota);
+            actualizarIndicador();
+        }
+
+        function generarTablaCuotas(cuotas, valorCuota) {
+            const tbody = document.getElementById('cuerpoTablaCuotas');
+            tbody.innerHTML = '';
+            const hoy = new Date();
+            for (let i = 1; i <= cuotas; i++) {
+                const venc = new Date(hoy.getFullYear(), hoy.getMonth() + i, hoy.getDate());
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color:var(--pa-muted);">${i}</td>
+                    <td style="text-align:right;color:var(--pa-muted);">${String(venc.getDate()).padStart(2,'0')}/${String(venc.getMonth()+1).padStart(2,'0')}/${venc.getFullYear()}</td>
+                    <td style="text-align:right;font-weight:600;">${fmt(valorCuota)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        let tablaCuotasVisible = false;
+        function toggleTablaCuotas() {
+            tablaCuotasVisible = !tablaCuotasVisible;
+            document.getElementById('tablaCuotasWrap').style.display = tablaCuotasVisible ? '' : 'none';
+            document.getElementById('iconToggleCuotas').className =
+                tablaCuotasVisible ? 'fa-solid fa-chevron-up fa-xs me-1' : 'fa-solid fa-chevron-down fa-xs me-1';
+            document.getElementById('btnToggleCuotas').childNodes[1].textContent =
+                tablaCuotasVisible ? ' Ocultar proyección' : ' Ver proyección por cuota';
+        }
+
+        function evaluarTipoVenta() {
+            const sel = document.getElementById('selectTipoVenta');
+            const opt = sel.options[sel.selectedIndex];
+            const requiere = opt && opt.dataset.financiacion === 'credito';
+            document.getElementById('seccionFinanciacion').style.display = requiere ? '' : 'none';
+            actualizarResumen();
+        }
+
+        // ── Precio del vehículo → pre-llenar MontoTotal ───────────────────────
+        document.getElementById('selectVehiculo').addEventListener('change', function () {
+            const texto = this.options[this.selectedIndex]?.text ?? '';
+            const match = texto.match(/Gs\.\s*([\d.,]+)/);
+            if (match) {
+                const precio = parseInt(match[1].replace(/\D/g, ''));
+                document.getElementById('inputMontoTotal').value = isNaN(precio) ? '' : precio;
+                actualizarResumen();
+                actualizarIndicador();
+            }
+        });
+
+        document.getElementById('selectTipoVenta').addEventListener('change', evaluarTipoVenta);
+        document.getElementById('inputMontoTotal').addEventListener('input', () => { actualizarResumen(); actualizarIndicador(); });
+        document.getElementById('inputMontoEntrada').addEventListener('input', () => { actualizarResumen(); actualizarIndicador(); });
+        document.getElementById('inputTasaInteres').addEventListener('input', actualizarResumen);
+        document.getElementById('inputCantidadCuotas').addEventListener('input', actualizarResumen);
+
+        // ── Inicializar ─────────────────────────────────────────────────────────
+        cargarTiposVenta();
+        evaluarTipoVenta();
+        actualizarResumen();
+        actualizarIndicador();
+</script>
+</body>
+</html>

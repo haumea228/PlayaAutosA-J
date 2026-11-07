@@ -1,0 +1,146 @@
+﻿@model PlayaAutos.Web.Models.CrearGastoViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Nuevo Gasto";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Nuevo Gasto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+    @await Html.PartialAsync("_Sidebar")
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Gastos" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-receipt me-2" style="color:var(--pa-accent);"></i>Nuevo Gasto</h4>
+                <p>Registrar gasto de vehículo</p>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+            </div>
+        }
+
+        <form asp-action="Crear" method="post" id="formCrear" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-wrench me-1" style="color:var(--pa-accent);"></i>
+                            Datos del Gasto
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="VehiculoId" class="pa-label">Vehículo *</label>
+                                <select asp-for="VehiculoId" asp-items="Model.Vehiculos" class="pa-input">
+                                    <option value="">— Seleccione un vehículo —</option>
+                                </select>
+                                <span asp-validation-for="VehiculoId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="TipoGastoId" class="pa-label">Tipo de gasto *</label>
+                                <select asp-for="TipoGastoId" asp-items="Model.TiposGasto" class="pa-input">
+                                    <option value="">— Seleccione —</option>
+                                </select>
+                                <span asp-validation-for="TipoGastoId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Fecha" class="pa-label">Fecha *</label>
+                                <input asp-for="Fecha" type="date" class="pa-input" />
+                                <span asp-validation-for="Fecha" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Monto" class="pa-label">Monto (Gs.) *</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="Monto" type="number" class="pa-input" min="1" placeholder="0"
+                                           style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="Monto" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Proveedor" class="pa-label">Proveedor</label>
+                                <input asp-for="Proveedor" class="pa-input" placeholder="Nombre del proveedor" />
+                                <span asp-validation-for="Proveedor" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label asp-for="Descripcion" class="pa-label">Descripción *</label>
+                                <input asp-for="Descripcion" class="pa-input" 
+                                       placeholder="Ej: Cambio de aceite, reparación de motor..." />
+                                <span asp-validation-for="Descripcion" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-accent);"></i>
+                            Información
+                        </div>
+                        <div style="font-size:0.85rem;color:var(--pa-muted);">
+                            <p><i class="fa-solid fa-robot me-2" style="color:var(--pa-info);"></i>Al registrar el gasto, se generará automáticamente un movimiento de <strong>egreso en caja</strong>.</p>
+                            <p><i class="fa-solid fa-calculator me-2" style="color:var(--pa-warning);"></i>El gasto afecta el cálculo de <strong>rentabilidad</strong> del vehículo.</p>
+                            <p style="margin:0;"><i class="fa-solid fa-chart-line me-2" style="color:var(--pa-success);"></i>Rentabilidad = PrecioVenta - Costo - Suma(Gastos).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Gastos" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnGuardar">
+                    <i class="fa-solid fa-floppy-disk"></i> Registrar Gasto
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .val-msg { font-size: 0.78rem; color: #f87191; margin-top: 3px; display: block; }
+    .action-btn {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        color: var(--pa-muted);
+        text-decoration: none;
+        transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+</style>
+
+<script>
+    document.getElementById('formCrear').addEventListener('submit', () => {
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+    });
+</script>
+</body>
+</html>

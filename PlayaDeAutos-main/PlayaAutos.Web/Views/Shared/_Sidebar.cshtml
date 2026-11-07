@@ -1,0 +1,174 @@
+@{
+    var nombre = Context.Session.GetString("Nombre") ?? "";
+    var rol = Context.Session.GetString("Rol") ?? "";
+    var path = Context.Request.Path.Value ?? "";
+    bool IsActive(string segment) => path.StartsWith(segment, StringComparison.OrdinalIgnoreCase);
+    bool esAdmin = rol == "AdministradorP";
+    bool esCajero = rol == "Cajero";
+}
+<aside class="pa-sidebar">
+
+    <!-- Brand + user -->
+    <div class="sidebar-brand">
+        <div class="sb-logo-block" style="margin-bottom:0.85rem;">
+            <img src="~/images/logo.png" alt="A&J Autos Usados" class="sb-logo-img-wrap"
+                 style="height:60px;width:auto;display:block;"
+                 onerror="this.style.display='none';this.closest('.sb-logo-block').querySelector('.sb-logo-text').style.display='flex';" />
+            <div class="sb-logo-text brand-row" style="display:none;">
+                <div class="brand-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="brand-name">A&amp;J <span>Autos</span></div>
+            </div>
+        </div>
+        <div class="user-info">
+            <div class="user-avatar"><i class="fa-solid fa-user-tie"></i></div>
+            <div class="user-details">
+                <div class="user-name">@nombre</div>
+                <span class="user-badge">@rol</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+
+        @if (esCajero)
+        {
+            @* ─────────── CAJERO ─────────── *@
+            <div class="sidebar-section-label">Operaciones</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Ventas/Pendientes") ? "active" : "")" href="/Ventas/Pendientes">
+                        <i class="fa-solid fa-clock"></i> Pendientes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Cuotas") ? "active" : "")" href="/Cuotas">
+                        <i class="fa-solid fa-coins"></i>Cuotas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Facturas") ? "active" : "")" href="/Facturas">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>Facturas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/NotasCredito") ? "active" : "")" href="/NotasCredito">
+                        <i class="fa-solid fa-file-circle-minus"></i>Notas de Crédito
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Caja") ? "active" : "")" href="/Caja">
+                        <i class="fa-solid fa-cash-register"></i>Caja
+                    </a>
+                </li>
+            </ul>
+        }
+        else
+        {
+            @* ─────────── ADMIN / VENDEDOR ─────────── *@
+            <div class="sidebar-section-label">Principal</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Dashboard") ? "active" : "")" href="/Dashboard">
+                        <i class="fa-solid fa-gauge-high"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Vehiculos") ? "active" : "")" href="/Vehiculos">
+                        <i class="fa-solid fa-car"></i>Vehículos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Clientes") ? "active" : "")" href="/Clientes">
+                        <i class="fa-solid fa-users"></i>Clientes
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-section-label" style="margin-top:0.75rem;">Operaciones</div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Ventas") ? "active" : "")" href="/Ventas">
+                        <i class="fa-solid fa-handshake"></i>Ventas
+                    </a>
+                </li>
+                @if (esAdmin)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Ventas/Pendientes") ? "active" : "")" href="/Ventas/Pendientes">
+                            <i class="fa-solid fa-clock"></i> Pendientes
+                        </a>
+                    </li>
+                }
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Cuotas") ? "active" : "")" href="/Cuotas">
+                        <i class="fa-solid fa-coins"></i>Cuotas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Citas") ? "active" : "")" href="/Citas">
+                        <i class="fa-solid fa-calendar-check"></i>Citas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Facturas") ? "active" : "")" href="/Facturas">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>Facturas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/NotasCredito") ? "active" : "")" href="/NotasCredito">
+                        <i class="fa-solid fa-file-circle-minus"></i>Notas de Crédito
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Caja") ? "active" : "")" href="/Caja">
+                        <i class="fa-solid fa-cash-register"></i>Caja
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Tasaciones") ? "active" : "")" href="/Tasaciones">
+                        <i class="fa-solid fa-car-burst"></i>Tasaciones
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/Consignas") ? "active" : "")" href="/Consignas">
+                        <i class="fa-solid fa-file-contract"></i>Consignas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(IsActive("/MarcasModelos") ? "active" : "")" href="/MarcasModelos">
+                        <i class="fa-solid fa-layer-group"></i>Marcas y Modelos
+                    </a>
+                </li>
+            </ul>
+
+            @if (esAdmin)
+            {
+                <div class="sidebar-section-label" style="margin-top:0.75rem;">Administración</div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Usuarios") ? "active" : "")" href="/Usuarios"
+                           title="Usuarios" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="fa-solid fa-users-gear"></i>Usuarios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Timbrados") ? "active" : "")" href="/Timbrados"
+                           title="Timbrados" data-bs-toggle="tooltip" data-bs-placement="right">
+                            <i class="fa-solid fa-stamp"></i>Timbrados
+                        </a>
+                    </li>
+                </ul>
+            }
+        }
+
+    </nav>
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+        <a class="nav-link" href="/Auth/Logout" style="color:var(--pa-muted);">
+            <i class="fa-solid fa-right-from-bracket"></i>Cerrar sesión
+        </a>
+    </div>
+
+</aside>

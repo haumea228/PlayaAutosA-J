@@ -1,0 +1,313 @@
+﻿@model List<PlayaAutos.Web.Models.TimbradoListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Timbrados";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Timbrados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <!-- Header -->
+            <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4><i class="fa-solid fa-stamp me-2" style="color:var(--pa-accent);"></i>Timbrados</h4>
+                    <p>Gestión de timbrados para facturación</p>
+                </div>
+                <a href="/Timbrados/Crear" class="btn-pa-primary">
+                    <i class="fa-solid fa-plus"></i> Nuevo timbrado
+                </a>
+            </div>
+
+            <!-- Alertas -->
+            @if (TempData["Exito"] != null)
+            {
+                <div class="pa-alert success mb-3">
+                    <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+                </div>
+            }
+
+            @{
+                var activo = Model.FirstOrDefault(t => t.Activo);
+            }
+
+            <!-- Banner timbrado activo -->
+            @if (activo != null)
+            {
+                var usados = activo.UltimoNumeroUsado - activo.NumeroDesde + 1;
+                var total = activo.NumeroHasta - activo.NumeroDesde + 1;
+                var disponibles = activo.NumeroHasta - activo.UltimoNumeroUsado;
+                var porcentaje = total > 0 ? (int)Math.Round((double)usados / total * 100) : 0;
+                var diasRestantes = (activo.FechaVencimiento - DateTime.Today).Days;
+                var colorBarra = porcentaje >= 90 ? "#ef4444" : porcentaje >= 70 ? "#f59e0b" : "#22c55e";
+                var colorDias = diasRestantes <= 30 ? "#ef4444" : diasRestantes <= 90 ? "#f59e0b" : "#22c55e";
+
+                <div class="pa-card p-4 mb-3"
+                     style="border:1px solid rgba(34,197,94,.25);background:rgba(34,197,94,.04);">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                        <div>
+                            <div style="font-size:0.75rem;font-weight:600;color:#22c55e;letter-spacing:.05em;margin-bottom:.3rem;">
+                                <i class="fa-solid fa-circle fa-xs me-1"></i>TIMBRADO ACTIVO
+                            </div>
+                            <div style="font-size:1.3rem;font-weight:800;font-family:monospace;color:var(--pa-text);">
+                                @activo.NumeroTimbrado
+                            </div>
+                            <div style="font-size:0.82rem;color:var(--pa-muted);margin-top:.2rem;">
+                                Vigente del @activo.FechaInicio.ToString("dd/MM/yyyy")
+                                al @activo.FechaVencimiento.ToString("dd/MM/yyyy")
+                                <span style="color:@colorDias;font-weight:600;margin-left:.5rem;">
+                                    (@diasRestantes día(s) restante(s))
+                                </span>
+                            </div>
+                        </div>
+                        <div style="text-align:right;min-width:180px;">
+                            <div style="font-size:0.78rem;color:var(--pa-muted);margin-bottom:.4rem;">
+                                Uso: <strong>@usados.ToString("N0")</strong> de <strong>@total.ToString("N0")</strong>
+                                — <strong style="color:@colorBarra;">@porcentaje%</strong>
+                            </div>
+                            <div style="height:8px;background:var(--pa-border);border-radius:99px;overflow:hidden;">
+                                <div style="height:100%;width:@porcentaje%;background:@colorBarra;
+                                border-radius:99px;transition:width .4s;"></div>
+                            </div>
+                            <div style="font-size:0.78rem;color:var(--pa-muted);margin-top:.4rem;">
+                                <strong style="color:var(--pa-text);">@disponibles.ToString("N0")</strong> facturas disponibles
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>No hay timbrado activo.</strong>
+                    No se podrán registrar ventas hasta que cargue uno válido.
+                    <a href="/Timbrados/Crear" style="color:inherit;font-weight:600;margin-left:.5rem;">
+                        Cargar ahora <i class="fa-solid fa-arrow-right fa-xs"></i>
+                    </a>
+                </div>
+            }
+
+            <!-- Tabla -->
+            <div class="pa-card" style="overflow:hidden;">
+                @if (!Model.Any())
+                {
+                    <div style="text-align:center;padding:4rem 2rem;">
+                        <i class="fa-solid fa-stamp" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                        <p style="color:var(--pa-muted);margin:0;">No hay timbrados registrados.</p>
+                        <a href="/Timbrados/Crear" class="btn-pa-primary mt-3 d-inline-flex">
+                            <i class="fa-solid fa-plus"></i> Cargar primer timbrado
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;">
+                        <table class="pa-table">
+                            <thead>
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Vigencia</th>
+                                    <th>Rango</th>
+                                    <th>Último usado</th>
+                                    <th>Disponibles</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model)
+                                {
+                                    var disponibles = t.NumeroHasta - t.UltimoNumeroUsado;
+                                    var total = t.NumeroHasta - t.NumeroDesde + 1;
+                                    var usados = t.UltimoNumeroUsado - t.NumeroDesde + 1;
+                                    var pct = total > 0 ? (int)Math.Round((double)usados / total * 100) : 0;
+                                    var colorPct = pct >= 90 ? "#ef4444" : pct >= 70 ? "#f59e0b" : "#22c55e";
+                                    var vencido = t.FechaVencimiento < DateTime.Today;
+
+                                    <tr>
+                                        <td>
+                                            <span style="font-family:monospace;font-size:0.88rem;font-weight:700;">
+                                                @t.NumeroTimbrado
+                                            </span>
+                                        </td>
+                                        <td style="font-size:0.83rem;">
+                                            <div>@t.FechaInicio.ToString("dd/MM/yyyy")</div>
+                                            <div style="color:@(vencido ? "#ef4444" : "var(--pa-muted)");">
+                                                hasta @t.FechaVencimiento.ToString("dd/MM/yyyy")
+                                                @if (vencido)
+                                                {
+                                                    <span style="font-size:0.75rem;"> — vencido</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td style="font-size:0.83rem;color:var(--pa-muted);">
+                                            @t.NumeroDesde.ToString("N0") — @t.NumeroHasta.ToString("N0")
+                                        </td>
+                                        <td style="font-family:monospace;font-size:0.85rem;">
+                                            @if (t.UltimoNumeroUsado >= t.NumeroDesde)
+                                            {
+                                                <span>@t.UltimoNumeroUsado.ToString("N0")</span>
+                                                <div style="margin-top:.25rem;height:4px;width:80px;
+                                                    background:var(--pa-border);border-radius:99px;overflow:hidden;">
+                                                    <div style="height:100%;width:@pct%;background:@colorPct;border-radius:99px;"></div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:var(--pa-muted);">Sin uso</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span style="font-weight:600;color:@(disponibles <= 100 ? "#f59e0b" : "var(--pa-text)");">
+                                                @disponibles.ToString("N0")
+                                            </span>
+                                            @if (disponibles <= 100 && t.Activo)
+                                            {
+                                                <div style="font-size:0.72rem;color:#f59e0b;">
+                                                    <i class="fa-solid fa-triangle-exclamation fa-xs"></i> Pocas restantes
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (t.Activo)
+                                            {
+                                                <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">
+                                                    <i class="fa-solid fa-circle fa-xs me-1"></i>Activo
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="estado-badge" style="background:rgba(100,116,139,.12);color:#64748b;">
+                                                    <i class="fa-solid fa-circle fa-xs me-1"></i>Inactivo
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (t.Activo)
+                                            {
+                                                <button type="button" class="action-btn deactivate"
+                                                        title="Desactivar"
+                                                        onclick="confirmarDesactivar(@t.TimbradoId, '@t.NumeroTimbrado')">
+                                                    <i class="fa-solid fa-ban"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:var(--pa-muted);font-size:0.75rem;">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            @if (Model.Any())
+            {
+                <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                    @Model.Count timbrado(s) registrado(s)
+                </p>
+            }
+        </div>
+    </div>
+
+    <!-- Modal desactivar -->
+    <div id="modalDesactivar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:var(--pa-surface);border:1px solid var(--pa-border);border-radius:14px;padding:2rem;max-width:420px;width:90%;text-align:center;">
+            <div style="width:54px;height:54px;background:rgba(233,69,96,.12);border-radius:50%;
+                display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;">
+                <i class="fa-solid fa-ban" style="color:var(--pa-accent);font-size:1.3rem;"></i>
+            </div>
+            <h5 style="font-weight:700;margin-bottom:.25rem;">Desactivar timbrado</h5>
+            <p style="color:var(--pa-muted);font-size:0.9rem;margin-bottom:.5rem;" id="msgDesactivar"></p>
+            <div style="background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);
+                border-radius:8px;padding:.6rem 1rem;font-size:.82rem;color:#ca8a04;margin-bottom:1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                Las facturas ya emitidas con este timbrado no se verán afectadas.
+            </div>
+            <form id="formDesactivar" method="post">
+                @Html.AntiForgeryToken()
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn-pa-ghost" onclick="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn-pa-primary"
+                            style="background:#ef4444;border-color:#ef4444;">
+                        <i class="fa-solid fa-ban me-1"></i>Sí, desactivar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+            .estado-badge {
+                display: inline-block;
+                padding: .2em .65em;
+                font-size: .75rem;
+                font-weight: 600;
+                border-radius: 50px;
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 7px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: .8rem;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                cursor: pointer;
+                transition: background var(--ease), border-color var(--ease);
+                color: var(--pa-muted);
+            }
+
+                .action-btn.deactivate:hover {
+                    background: rgba(233,69,96,.12);
+                    border-color: var(--pa-accent);
+                    color: var(--pa-accent);
+                }
+    </style>
+
+    <script>
+            function confirmarDesactivar(id, numero) {
+                document.getElementById('msgDesactivar').textContent =
+                    `¿Está seguro que desea desactivar el timbrado "${numero}"?`;
+                document.getElementById('formDesactivar').action = '/Timbrados/Desactivar/' + id;
+                document.getElementById('modalDesactivar').style.display = 'flex';
+            }
+
+            function cerrarModal() {
+                document.getElementById('modalDesactivar').style.display = 'none';
+            }
+
+            document.getElementById('modalDesactivar').addEventListener('click', function (e) {
+                if (e.target === this) cerrarModal();
+            });
+    </script>
+</body>
+</html>

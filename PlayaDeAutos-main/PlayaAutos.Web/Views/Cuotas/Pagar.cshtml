@@ -1,0 +1,377 @@
+﻿@model PlayaAutos.Web.Models.PagarCuotaViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Registrar Pago";
+    var esCuotaVencida = Model.FechaVencimiento < DateTime.Today;
+    var recargoValor = (long)(Model.RecargoAutomatico ?? 0);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Registrar Pago</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center gap-3">
+                <a href="/Cuotas" class="action-btn" style="flex-shrink:0;" title="Volver">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h4><i class="fa-solid fa-money-bill-wave me-2" style="color:#22c55e;"></i>Registrar Pago</h4>
+                    <p>Cuota #@Model.NumeroCuota de @(Model.CantidadCuotas ?? 0)</p>
+                </div>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Corrija los errores antes de continuar.</strong>
+                </div>
+            }
+
+
+            <form asp-action="Pagar" asp-route-id="@Model.CuotaId" method="post" id="formPagar" enctype="multipart/form-data" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="NumeroCuota" />
+                <input type="hidden" asp-for="Monto" />
+                <input type="hidden" asp-for="FechaVencimiento" />
+                <input type="hidden" asp-for="Cliente" />
+                <input type="hidden" asp-for="Vehiculo" />
+                <input type="hidden" asp-for="CantidadCuotas" />
+
+                <div class="row g-3">
+                    <div class="col-lg-8">
+
+                        <!-- Datos de la cuota -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-accent);"></i>
+                                Datos de la cuota
+                            </div>
+                            <div class="row g-2" style="font-size:0.88rem;">
+                                <div class="col-6">
+                                    <div class="info-row">
+                                        <span class="info-label">Cliente</span>
+                                        <span class="info-value">@Model.Cliente</span>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="info-row">
+                                        <span class="info-label">Vehículo</span>
+                                        <span class="info-value">@Model.Vehiculo</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="info-row">
+                                        <span class="info-label">Cuota N°</span>
+                                        <span class="info-value">@Model.NumeroCuota de @(Model.CantidadCuotas ?? 0)</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="info-row">
+                                        <span class="info-label">Monto original</span>
+                                        <span class="info-value">Gs. @Model.Monto.ToString("N0")</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="info-row">
+                                        <span class="info-label">Vencimiento</span>
+                                        <span class="info-value" style="color:@(Model.FechaVencimiento < DateTime.Now ? "#ef4444" : "var(--pa-text)")">
+                                            @Model.FechaVencimiento.ToString("dd/MM/yyyy")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datos del pago -->
+                        <div class="pa-card p-4">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-money-bill-wave me-1" style="color:var(--pa-accent);"></i>
+                                Datos del pago
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="FechaPago" class="pa-label">Fecha de pago *</label>
+                                    <input asp-for="FechaPago" type="date" class="pa-input" />
+                                    <span asp-validation-for="FechaPago" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="MontoPagado" class="pa-label">Monto a pagar (Gs.)</label>
+                                    <div class="input-wrapper">
+                                        <input asp-for="MontoPagado" type="number" class="pa-input" readonly
+                                               style="padding-left:2.8rem !important;background:var(--pa-bg);cursor:not-allowed;" />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <span style="font-size:0.72rem;color:var(--pa-muted);display:block;margin-top:3px;">
+                                        <i class="fa-solid fa-lock fa-xs me-1"></i>Igual al monto original de la cuota
+                                    </span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="pa-label">
+                                        Recargo (Gs.)
+                                        @if (!esCuotaVencida)
+                                        {
+                                            <span style="font-size:0.72rem;color:var(--pa-muted);">— Solo si está vencida</span>
+                                        }
+                                    </label>
+                                    <div class="input-wrapper">
+                                        <input type="number" name="MontoRecargo" class="pa-input"
+                                               min="0" placeholder="0" style="padding-left:2.8rem !important;"
+                                               id="inputRecargo" value="@recargoValor"
+                                        @(esCuotaVencida ? "" : "disabled") />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    @if (!esCuotaVencida)
+                                    {
+                                        <span style="font-size:0.72rem;color:#22c55e;display:block;margin-top:3px;">
+                                            <i class="fa-solid fa-check-circle fa-xs me-1"></i>Cuota al día — no aplica recargo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:0.72rem;color:#ca8a04;display:block;margin-top:3px;">
+                                            <i class="fa-solid fa-triangle-exclamation fa-xs me-1"></i>Cuota vencida — recargo automático aplicado
+                                        </span>
+                                    }
+                                    <span asp-validation-for="MontoRecargo" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="FormaPagoId" class="pa-label">Forma de pago *</label>
+                                    <select asp-for="FormaPagoId" asp-items="Model.FormasPago" class="pa-input">
+                                        <option value="">— Seleccione —</option>
+                                    </select>
+                                    <span asp-validation-for="FormaPagoId" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-12">
+                                    <label asp-for="ObservacionPago" class="pa-label">Observación</label>
+                                    <textarea asp-for="ObservacionPago" class="pa-input" rows="2"
+                                              placeholder="Notas sobre el pago..." style="resize:vertical;"></textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="pa-label">Comprobante (imagen)</label>
+                                    <div class="comprobante-upload-area" id="uploadArea" onclick="document.getElementById('Comprobante').click()">
+                                        <i class="fa-solid fa-image" style="font-size:1.5rem;color:var(--pa-muted);margin-bottom:0.4rem;"></i>
+                                        <span id="uploadLabel" style="font-size:0.83rem;color:var(--pa-muted);">
+                                            Haz clic para adjuntar imagen del comprobante
+                                        </span>
+                                        <span style="font-size:0.72rem;color:var(--pa-muted);">JPG, PNG, WEBP — máx. 5 MB</span>
+                                    </div>
+                                    <input type="file" id="Comprobante" name="Comprobante"
+                                           accept="image/jpeg,image/png,image/webp"
+                                           style="display:none;" onchange="previewComprobante(this)" />
+                                    <div id="comprobantePreview" style="display:none;margin-top:0.6rem;position:relative;">
+                                        <img id="previewImg" src="" alt="Vista previa"
+                                             style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--pa-border);object-fit:contain;" />
+                                        <button type="button" onclick="quitarComprobante()"
+                                                style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;cursor:pointer;font-size:0.75rem;">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Panel lateral -->
+                    <div class="col-lg-4">
+                        <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                            <div class="section-title mb-3" style="color:#22c55e;">
+                                <i class="fa-solid fa-check-circle me-1"></i>
+                                Resumen
+                            </div>
+                            <div style="font-size:0.85rem;">
+                                <div class="detalle-row">
+                                    <span class="detalle-label">Monto cuota</span>
+                                    <span class="detalle-valor">Gs. @Model.Monto.ToString("N0")</span>
+                                </div>
+                                <div class="detalle-row">
+                                    <span class="detalle-label">Recargo</span>
+                                    <span class="detalle-valor" id="resRecargo">Gs. 0</span>
+                                </div>
+                                <hr style="border-color:var(--pa-border);" />
+                                <div class="detalle-row">
+                                    <span class="detalle-label" style="font-weight:700;">Total a pagar</span>
+                                    <span class="detalle-valor" id="resTotal" style="font-size:1.1rem;color:#22c55e;">
+                                        Gs. @Model.Monto.ToString("N0")
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:1rem;padding:0.75rem;background:var(--pa-bg);border-radius:8px;border:1px solid var(--pa-border);font-size:0.78rem;color:var(--pa-muted);">
+                                <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-info);"></i>
+                                Al registrar el pago, se generará automáticamente un ingreso en caja.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                    <a href="/Cuotas" class="btn-pa-ghost">
+                        <i class="fa-solid fa-xmark"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn-pa-primary" id="btnGuardar" style="background:#22c55e;border-color:#22c55e;">
+                        <i class="fa-solid fa-check"></i> Registrar pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+            .val-msg {
+                font-size: 0.78rem;
+                color: #f87191;
+                margin-top: 3px;
+                display: block;
+            }
+
+            .action-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                color: var(--pa-muted);
+                text-decoration: none;
+                transition: background var(--ease);
+            }
+
+                .action-btn:hover {
+                    background: rgba(255,255,255,0.06);
+                    color: var(--pa-text);
+                }
+
+            .info-row {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                margin-bottom: .5rem;
+            }
+
+            .info-label {
+                font-size: 0.72rem;
+                color: var(--pa-muted);
+                text-transform: uppercase;
+                letter-spacing: .5px;
+            }
+
+            .info-value {
+                font-weight: 600;
+                color: var(--pa-text);
+            }
+
+            .detalle-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid var(--pa-border);
+            }
+
+            .detalle-label {
+                color: var(--pa-muted);
+                font-size: 0.82rem;
+            }
+
+            .detalle-valor {
+                font-weight: 600;
+                color: var(--pa-text);
+                font-size: 0.88rem;
+                text-align: right;
+            }
+
+            .comprobante-upload-area {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                padding: 1.2rem 1rem;
+                border: 2px dashed var(--pa-border);
+                border-radius: 10px;
+                cursor: pointer;
+                transition: border-color var(--ease), background var(--ease);
+            }
+
+                .comprobante-upload-area:hover {
+                    border-color: var(--pa-accent);
+                    background: rgba(233,69,96,.04);
+                }
+    </style>
+
+    <script>
+            var inputRecargo = document.getElementById('inputRecargo');
+            var resRecargo = document.getElementById('resRecargo');
+            var resTotal = document.getElementById('resTotal');
+            var montoOriginal = @Model.Monto;
+
+            function actualizarResumen() {
+                var recargo = parseInt(inputRecargo && inputRecargo.value ? inputRecargo.value : 0) || 0;
+                var total = montoOriginal + recargo;
+                if (resRecargo) resRecargo.textContent = 'Gs. ' + recargo.toLocaleString('es-PY');
+                if (resTotal) resTotal.textContent = 'Gs. ' + total.toLocaleString('es-PY');
+            }
+
+            if (inputRecargo) {
+                inputRecargo.addEventListener('input', actualizarResumen);
+            }
+
+            actualizarResumen();
+
+            // Actualizar el input de MontoPagado con el total (monto + recargo)
+            if (inputRecargo) {
+                var recargoInicial = parseInt(inputRecargo.value) || 0;
+                var totalInicial = montoOriginal + recargoInicial;
+                var inputMontoPagado = document.querySelector('input[name="MontoPagado"]');
+                if (inputMontoPagado) {
+                    inputMontoPagado.value = totalInicial;
+                }
+            }
+
+            document.getElementById('formPagar').addEventListener('submit', function() {
+                var btn = document.getElementById('btnGuardar');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
+            });
+
+            function previewComprobante(input) {
+                if (!input.files || !input.files[0]) return;
+                var file = input.files[0];
+                if (file.size > 5 * 1024 * 1024) { alert('El archivo supera el límite de 5 MB.'); input.value = ''; return; }
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('comprobantePreview').style.display = 'block';
+                    document.getElementById('uploadArea').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function quitarComprobante() {
+                document.getElementById('Comprobante').value = '';
+                document.getElementById('previewImg').src = '';
+                document.getElementById('comprobantePreview').style.display = 'none';
+                document.getElementById('uploadArea').style.display = 'flex';
+            }
+    </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+﻿@model PlayaAutos.Web.Models.CitaViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Agendar Cita";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Agendar Cita</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Citas" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-calendar-plus me-2" style="color:var(--pa-accent);"></i>Agendar Cita</h4>
+                <p>Complete los campos obligatorios marcados con *</p>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+            </div>
+        }
+
+        <form asp-action="Crear" method="post" id="formCrear" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="EstadoCitaId" value="1" />
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-user-group me-1" style="color:var(--pa-accent);"></i>
+                            Participantes
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ClienteId" class="pa-label">Cliente *</label>
+                                <select asp-for="ClienteId" asp-items="Model.Clientes" class="pa-input">
+                                    <option value="">— Seleccione un cliente —</option>
+                                </select>
+                                <span asp-validation-for="ClienteId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="VendedorId" class="pa-label">Vendedor asignado *</label>
+                                <select asp-for="VendedorId" asp-items="Model.Vendedores" class="pa-input">
+                                    <option value="">— Seleccione un vendedor —</option>
+                                </select>
+                                <span asp-validation-for="VendedorId" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-clock me-1" style="color:var(--pa-accent);"></i>
+                            Fecha y Tipo
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="FechaHora" class="pa-label">Fecha y hora *</label>
+                                <input asp-for="FechaHora" type="datetime-local" class="pa-input" 
+                                       id="inputFechaHora" />
+                                <span asp-validation-for="FechaHora" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="TipoCita" class="pa-label">Tipo de cita *</label>
+                                <select asp-for="TipoCita" asp-items="Model.TiposCita" class="pa-input" id="selectTipoCita">
+                                    <option value="">— Seleccione —</option>
+                                </select>
+                                <span asp-validation-for="TipoCita" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="VehiculoId" class="pa-label">Vehículo de interés</label>
+                                <select asp-for="VehiculoId" asp-items="Model.Vehiculos" class="pa-input">
+                                    <option value="">— Sin vehículo específico —</option>
+                                </select>
+                                <span asp-validation-for="VehiculoId" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pa-card p-4">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-note-sticky me-1" style="color:var(--pa-accent);"></i>
+                            Observaciones
+                        </div>
+                        <textarea asp-for="Observaciones" class="pa-input" rows="3"
+                                  placeholder="Notas adicionales sobre la cita..."
+                                  style="resize:vertical;"></textarea>
+                        <span asp-validation-for="Observaciones" class="val-msg"></span>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-accent);"></i>
+                            Información
+                        </div>
+                        <div style="font-size:0.85rem;color:var(--pa-muted);">
+                            <p><i class="fa-solid fa-calendar me-2" style="color:var(--pa-info);"></i>Las citas se crean en estado <strong>Pendiente</strong>.</p>
+                            <p><i class="fa-solid fa-car me-2" style="color:var(--pa-success);"></i>El vehículo es opcional para consultas generales.</p>
+                            <p><i class="fa-solid fa-clock me-2" style="color:var(--pa-warning);"></i>Horario: Lunes a Sábado de 08:00 a 18:00.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Citas" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnGuardar">
+                    <i class="fa-solid fa-floppy-disk"></i> Agendar cita
+                </button>
+            </div>
+                <!-- Toast de error -->
+                <div id="toastError" style="display:none;position:fixed;top:1rem;right:1rem;background:#1f1a1a;border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:1rem 1.5rem;z-index:2000;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:420px;align-items:center;gap:0.75rem;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;font-size:1.2rem;flex-shrink:0;"></i>
+                    <span style="color:#fca5a5;font-weight:500;font-size:0.88rem;" id="msgToast"></span>
+                    <button onclick="cerrarToast()" style="background:none;border:none;color:var(--pa-muted);cursor:pointer;margin-left:auto;flex-shrink:0;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .val-msg { font-size: 0.78rem; color: #f87191; margin-top: 3px; display: block; }
+    .action-btn {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        color: var(--pa-muted);
+        text-decoration: none;
+        transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+</style>
+
+    <script>
+                        // ============ TOAST ============
+            let toastTimer = null;
+            function mostrarError(msg) {
+                const toast = document.getElementById('toastError');
+                document.getElementById('msgToast').textContent = msg;
+                toast.style.display = 'flex';
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
+            }
+            function cerrarToast() {
+                document.getElementById('toastError').style.display = 'none';
+                clearTimeout(toastTimer);
+            }
+
+            // ============ FERIADOS ============
+            function calcularSemanaSanta(año) {
+                const a = año % 19, b = año % 4, c = año % 7;
+                const d = (19 * a + 24) % 30;
+                const e = (2 * b + 4 * c + 6 * d + 5) % 7;
+                const dias = 22 + d + e;
+                const pascua = dias <= 31 ? new Date(año, 2, dias) : new Date(año, 3, dias - 31);
+                return {
+                    juevesSanto: new Date(pascua.getFullYear(), pascua.getMonth(), pascua.getDate() - 3),
+                    viernesSanto: new Date(pascua.getFullYear(), pascua.getMonth(), pascua.getDate() - 2)
+                };
+            }
+
+            function esFeriado(fecha) {
+                const año = fecha.getFullYear();
+                const fijos = [
+                    new Date(año, 0, 1), new Date(año, 2, 1), new Date(año, 4, 1),
+                    new Date(año, 4, 14), new Date(año, 4, 15), new Date(año, 5, 12),
+                    new Date(año, 7, 15), new Date(año, 8, 29), new Date(año, 11, 8), new Date(año, 11, 25)
+                ];
+                const ss = calcularSemanaSanta(año);
+                fijos.push(ss.juevesSanto, ss.viernesSanto);
+                return fijos.some(f => f.toDateString() === fecha.toDateString());
+            }
+
+            function validarFecha(fecha) {
+                if (fecha < new Date()) return 'No se pueden agendar citas en el pasado.';
+                if (fecha.getDay() === 0) return 'No se agendan citas los domingos.';
+                const h = fecha.getHours(), m = fecha.getMinutes();
+                if (h < 8 || h > 18 || (h === 18 && m > 0)) return 'El horario debe ser entre 08:00 y 18:00 hs.';
+                if (esFeriado(fecha)) return 'No se agendan citas en días feriados nacionales.';
+                return null;
+            }
+
+            // ============ VALIDAR AL CAMBIAR ============
+            inputFecha.addEventListener('change', function() {
+                if (!this.value) return;
+                const fecha = new Date(this.value);
+                const error = validarFecha(fecha);
+                if (error) {
+                    mostrarError(error);
+                    this.value = '';
+                }
+            });
+    </script>
+</body>
+</html>

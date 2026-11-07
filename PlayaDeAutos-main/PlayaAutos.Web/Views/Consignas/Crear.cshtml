@@ -1,0 +1,267 @@
+@model PlayaAutos.Web.Models.ConsignaViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Nueva Consigna";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Nueva Consigna</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Consignas" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-file-signature me-2" style="color:var(--pa-accent);"></i>Nueva Consigna</h4>
+                <p>Registrá un contrato de consignación — el vehículo ingresa al catálogo al guardar</p>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors).Take(3))
+                {
+                    <div style="font-size:0.82rem;margin-top:2px;">@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-action="Crear" method="post" id="formConsigna" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+
+                <!-- ── Columna principal ── -->
+                <div class="col-lg-8">
+
+                    <!-- Partes del contrato -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-handshake me-1" style="color:var(--pa-accent);"></i>
+                            Partes del contrato
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="ConsignanteId" class="pa-label">Consignante *</label>
+                                <select asp-for="ConsignanteId" asp-items="Model.Consignantes"
+                                        class="pa-input" id="ConsignanteId">
+                                    <option value="">— Seleccionar consignante —</option>
+                                </select>
+                                <span asp-validation-for="ConsignanteId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label asp-for="TasacionVehiculoId" class="pa-label">Vehículo a consignar (tasación aprobada) *</label>
+                                <select asp-for="TasacionVehiculoId" class="pa-input" id="TasacionVehiculoId" disabled>
+                                    <option value="">— Primero seleccioná el consignante —</option>
+                                </select>
+                                <span asp-validation-for="TasacionVehiculoId" class="val-msg"></span>
+                                <div id="loadingTasaciones" style="display:none;font-size:0.78rem;color:var(--pa-muted);margin-top:0.4rem;">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando tasaciones...
+                                </div>
+                                <div id="sinTasaciones" style="display:none;font-size:0.78rem;color:#f59e0b;margin-top:0.4rem;">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i> No hay tasaciones aprobadas disponibles para este consignante.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Condiciones del acuerdo -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-sliders me-1" style="color:var(--pa-accent);"></i>
+                            Condiciones del acuerdo
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="FechaInicio" class="pa-label">Fecha de inicio *</label>
+                                <input asp-for="FechaInicio" type="date" class="pa-input" id="FechaInicio" />
+                                <span asp-validation-for="FechaInicio" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="FechaFin" class="pa-label">Fecha de vencimiento *</label>
+                                <input asp-for="FechaFin" type="date" class="pa-input" id="FechaFin" />
+                                <span asp-validation-for="FechaFin" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="PorcentajeComision" class="pa-label">Comisión para la playa (%)</label>
+                                <input asp-for="PorcentajeComision" type="number" class="pa-input"
+                                       id="PorcentajeComision" step="0.1" min="0.1" max="100"
+                                       placeholder="Ej: 10.0" />
+                                <span asp-validation-for="PorcentajeComision" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label asp-for="Clausulas" class="pa-label">
+                                    Cláusulas adicionales <span style="color:var(--pa-muted);font-weight:400;">(opcional)</span>
+                                </label>
+                                <textarea asp-for="Clausulas" class="pa-input" rows="3"
+                                          placeholder="Ingresá cláusulas adicionales al contrato..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn-pa-primary" style="padding:0.75rem 2rem;">
+                            <i class="fa-solid fa-file-signature me-1"></i> Registrar Consigna
+                        </button>
+                        <a href="/Consignas" class="btn-pa-secondary" style="padding:0.75rem 1.5rem;">Cancelar</a>
+                    </div>
+
+                </div>
+
+                <!-- ── Resumen lateral ── -->
+                <div class="col-lg-4">
+                    <div style="position:sticky;top:1.5rem;">
+                        <div class="pa-card p-4" style="border:1.5px solid var(--pa-accent);background:rgba(99,102,241,0.03);">
+                            <div class="section-title mb-3" style="color:var(--pa-accent);">
+                                <i class="fa-solid fa-calculator me-1"></i>
+                                Resumen de la consigna
+                            </div>
+
+                            <div id="resumenVacio" style="text-align:center;padding:1.5rem 0;color:var(--pa-muted);">
+                                <i class="fa-solid fa-car" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.75rem;"></i>
+                                Seleccioná el consignante y la tasación para ver el resumen
+                            </div>
+
+                            <div id="resumenContenido" style="display:none;">
+                                <div style="margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--pa-border);">
+                                    <div style="font-size:0.75rem;color:var(--pa-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:0.4rem;">Vehículo</div>
+                                    <div id="resVehiculo" style="font-weight:700;font-size:0.95rem;color:var(--pa-text);"></div>
+                                </div>
+
+                                <div style="display:flex;flex-direction:column;gap:0.85rem;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--pa-muted);font-size:0.85rem;">Precio base (cliente)</span>
+                                        <span id="resPrecioBase" style="font-weight:700;font-size:0.92rem;"></span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--pa-muted);font-size:0.85rem;">Comisión playa</span>
+                                        <span id="resComision" style="font-weight:600;color:var(--pa-accent);"></span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="color:var(--pa-muted);font-size:0.85rem;">Duración</span>
+                                        <span id="resDuracion" style="font-weight:600;"></span>
+                                    </div>
+                                    <div style="border-top:2px solid var(--pa-accent);padding-top:0.85rem;margin-top:0.25rem;
+                                                display:flex;justify-content:space-between;align-items:center;">
+                                        <span style="font-weight:700;font-size:0.92rem;">Ganancia estimada</span>
+                                        <span id="resGanancia" style="font-weight:800;font-size:1.1rem;color:#22c55e;"></span>
+                                    </div>
+                                </div>
+                                <div style="margin-top:1rem;padding:0.75rem;background:rgba(245,158,11,0.08);border-radius:8px;
+                                            font-size:0.78rem;color:#92400e;border:1px solid rgba(245,158,11,0.2);">
+                                    <i class="fa-solid fa-circle-info me-1"></i>
+                                    La ganancia real depende del precio de venta final. Al consignar, el vehículo ingresa al catálogo.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    const tasacionesCache = {};
+
+    const selConsignante = document.getElementById('ConsignanteId');
+    const selTasacion    = document.getElementById('TasacionVehiculoId');
+    const inpPct         = document.getElementById('PorcentajeComision');
+    const inpIni         = document.getElementById('FechaInicio');
+    const inpFin         = document.getElementById('FechaFin');
+
+    selConsignante.addEventListener('change', async function () {
+        const cid = this.value;
+        resetTasaciones();
+        actualizarResumen();
+        if (!cid) return;
+
+        document.getElementById('loadingTasaciones').style.display = 'block';
+        selTasacion.disabled = true;
+
+        if (!tasacionesCache[cid]) {
+            const resp = await fetch(`/Consignas/TasacionesPorConsignante/${cid}`);
+            tasacionesCache[cid] = resp.ok ? await resp.json() : [];
+        }
+
+        document.getElementById('loadingTasaciones').style.display = 'none';
+        const items = tasacionesCache[cid];
+
+        if (!items || items.length === 0) {
+            document.getElementById('sinTasaciones').style.display = 'block';
+            return;
+        }
+
+        selTasacion.innerHTML = '<option value="">— Seleccionar vehículo —</option>';
+        items.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.tasacionVehiculoId;
+            opt.textContent = t.descripcion + '  —  Gs. ' + Number(t.precioVentaCliente).toLocaleString('es-PY');
+            opt.dataset.precio = t.precioVentaCliente;
+            opt.dataset.desc   = t.descripcion;
+            selTasacion.appendChild(opt);
+        });
+        selTasacion.disabled = false;
+    });
+
+    selTasacion.addEventListener('change', actualizarResumen);
+    inpPct.addEventListener('input', actualizarResumen);
+    inpIni.addEventListener('change', actualizarResumen);
+    inpFin.addEventListener('change', actualizarResumen);
+
+    function resetTasaciones() {
+        selTasacion.innerHTML = '<option value="">— Primero seleccioná el consignante —</option>';
+        selTasacion.disabled = true;
+        document.getElementById('sinTasaciones').style.display = 'none';
+    }
+
+    function actualizarResumen() {
+        const opt   = selTasacion.options[selTasacion.selectedIndex];
+        const precio = opt?.dataset?.precio ? Number(opt.dataset.precio) : 0;
+        const desc   = opt?.dataset?.desc ?? '';
+        const pct    = parseFloat(inpPct.value) || 0;
+
+        const ini  = inpIni.value ? new Date(inpIni.value) : null;
+        const fin  = inpFin.value ? new Date(inpFin.value) : null;
+        const dias = ini && fin && fin > ini ? Math.round((fin - ini) / 86400000) : 0;
+
+        if (!precio || !desc) {
+            document.getElementById('resumenVacio').style.display = 'block';
+            document.getElementById('resumenContenido').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('resumenVacio').style.display = 'none';
+        document.getElementById('resumenContenido').style.display = 'block';
+
+        const ganancia = Math.round(precio * pct / 100);
+        document.getElementById('resVehiculo').textContent    = desc;
+        document.getElementById('resPrecioBase').textContent  = 'Gs. ' + precio.toLocaleString('es-PY');
+        document.getElementById('resComision').textContent    = pct > 0 ? pct.toFixed(1) + '%' : '—';
+        document.getElementById('resDuracion').textContent   = dias > 0 ? dias + ' días' : '—';
+        document.getElementById('resGanancia').textContent   = pct > 0 ? 'Gs. ' + ganancia.toLocaleString('es-PY') : '—';
+    }
+</script>
+</body>
+</html>

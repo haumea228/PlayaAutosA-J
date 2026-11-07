@@ -1,0 +1,333 @@
+﻿@model List<PlayaAutos.Web.Models.UsuarioListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Usuarios";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Usuarios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Header -->
+        <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h4><i class="fa-solid fa-users-gear me-2" style="color:var(--pa-accent);"></i>Usuarios</h4>
+                <p>Gestión de administradores, vendedores y cajeros</p>
+            </div>
+            <a href="/Usuarios/Crear" class="btn-pa-primary">
+                <i class="fa-solid fa-plus"></i> Nuevo usuario
+            </a>
+        </div>
+
+        <!-- Alertas -->
+        @if (TempData["Exito"] != null)
+        {
+            <div class="pa-alert success mb-3">
+                <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+            </div>
+        }
+
+        <!-- Buscador -->
+        <div class="pa-card p-3 mb-3">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="input-wrapper" style="max-width:320px;flex:1;">
+                    <input type="text" id="buscador" class="pa-input"
+                           placeholder="Buscar por nombre o email..." />
+                    <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                </div>
+                    <select id="filtroRol" class="pa-input" style="max-width:180px;">
+                        <option value="">Todos los roles</option>
+                        <option value="AdministradorP">Administrador</option>
+                        <option value="Vendedor">Vendedor</option>
+                        <option value="Cajero">Cajero</option>
+                        <option value="Cliente">Cliente</option>
+                    </select>
+                <select id="filtroEstado" class="pa-input" style="max-width:160px;">
+                    <option value="">Todos los estados</option>
+                    <option value="activo">Activos</option>
+                    <option value="inactivo">Inactivos</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="pa-card" style="overflow:hidden;">
+            @if (!Model.Any())
+            {
+                <div style="text-align:center;padding:4rem 2rem;">
+                    <i class="fa-solid fa-users-gear" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                    <p style="color:var(--pa-muted);margin:0;">No hay usuarios registrados.</p>
+                    <a href="/Usuarios/Crear" class="btn-pa-primary mt-3 d-inline-flex">
+                        <i class="fa-solid fa-plus"></i> Crear primer usuario
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="pa-table" id="tablaUsuarios">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Rol</th>
+                                <th>Fecha alta</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in Model)
+                            {
+                                var esYo = u.UsuarioId == (int)(Context.Session.GetInt32("UsuarioId") ?? 0);
+                                <tr data-rol="@u.Rol"
+                                    data-estado="@(u.ActivoUsuario ? "activo" : "inactivo")">
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                                <div style="width:34px;height:34px;border-radius:50%;
+                                                    background:@(u.Rol == "AdministradorP" ? "rgba(233,69,96,.12)" :
+                                                                              u.Rol == "Cajero" ? "rgba(234,179,8,.12)" :
+                                                                              "rgba(59,130,246,.12)");
+                                                    display:flex;align-items:center;justify-content:center;
+                                                    font-weight:700;font-size:.82rem;flex-shrink:0;
+                                                    color:@(u.Rol == "AdministradorP" ? "var(--pa-accent)" :
+                                                                          u.Rol == "Cajero" ? "#ca8a04" :
+                                                                          "var(--pa-info)");">
+                                                    @(u.UsuarioNombre.Length > 0 ? u.UsuarioNombre[0].ToString().ToUpper() : "?")
+                                                </div>
+                                            <div>
+                                                <div style="font-weight:600;">
+                                                    @u.UsuarioNombre
+                                                    @if (esYo)
+                                                    {
+                                                        <span style="font-size:0.72rem;color:var(--pa-muted);font-weight:400;"> (tú)</span>
+                                                    }
+                                                </div>
+                                                <div style="font-size:0.75rem;color:var(--pa-muted);">ID: @u.UsuarioId</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="font-size:0.85rem;">
+                                        <a href="mailto:@u.UsuarioEmail"
+                                           style="color:var(--pa-info);text-decoration:none;">@u.UsuarioEmail</a>
+                                    </td>
+                                    <td style="font-size:0.85rem;">
+                                        @if (!string.IsNullOrEmpty(u.UsuarioPhone))
+                                        {
+                                            @u.UsuarioPhone
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--pa-muted);">—</span>
+                                        }
+                                    </td>
+                                        <td>
+                                            @if (u.Rol == "AdministradorP")
+                                            {
+                                                <span class="rol-badge" style="background:rgba(233,69,96,.12);color:var(--pa-accent);">
+                                                    <i class="fa-solid fa-shield-halved fa-xs me-1"></i>Admin
+                                                </span>
+                                            }
+                                            else if (u.Rol == "Cajero")
+                                            {
+                                                <span class="rol-badge" style="background:rgba(234,179,8,.12);color:#ca8a04;">
+                                                    <i class="fa-solid fa-cash-register fa-xs me-1"></i>Cajero
+                                                </span>
+                                            }
+                                            else if (u.Rol == "Cliente")
+                                            {
+                                                <span class="rol-badge" style="background:rgba(107,114,128,.12);color:#6b7280;">
+                                                    <i class="fa-solid fa-user fa-xs me-1"></i>Cliente
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="rol-badge" style="background:rgba(59,130,246,.12);color:var(--pa-info);">
+                                                    <i class="fa-solid fa-user-tie fa-xs me-1"></i>Vendedor
+                                                </span>
+                                            }
+                                        </td>
+                                    <td style="font-size:0.83rem;color:var(--pa-muted);">
+                                        @u.FechaAltaUsuario.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td>
+                                        @if (u.ActivoUsuario)
+                                        {
+                                            <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="/Usuarios/Editar/@u.UsuarioId"
+                                               class="action-btn edit" title="Editar">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            @if (!esYo)
+                                            {
+                                                <form method="post" action="/Usuarios/ToggleActivo/@u.UsuarioId"
+                                                      style="display:inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="button"
+                                                            class="action-btn @(u.ActivoUsuario ? "deactivate" : "activate")"
+                                                            title="@(u.ActivoUsuario ? "Desactivar" : "Activar")"
+                                                            onclick="confirmarToggle(@u.UsuarioId, '@u.UsuarioNombre.Replace("'","\\'")', @u.ActivoUsuario.ToString().ToLower())">
+                                                        <i class="fa-solid @(u.ActivoUsuario ? "fa-user-slash" : "fa-user-check")"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (Model.Any())
+        {
+            <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                <span id="totalVisible">@Model.Count</span> usuario(s)
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Modal toggle activo/inactivo -->
+<div id="modalToggle" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:var(--pa-surface);border:1px solid var(--pa-border);border-radius:14px;padding:2rem;max-width:420px;width:90%;text-align:center;">
+        <div id="iconoToggle" style="width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;">
+            <i id="faIconoToggle" style="font-size:1.3rem;"></i>
+        </div>
+        <h5 style="font-weight:700;margin-bottom:.25rem;" id="tituloToggle"></h5>
+        <p style="color:var(--pa-muted);font-size:0.9rem;margin-bottom:1.5rem;" id="msgToggle"></p>
+        <form id="formToggle" method="post">
+            @Html.AntiForgeryToken()
+            <div class="d-flex gap-2 justify-content-center">
+                <button type="button" class="btn-pa-ghost" onclick="cerrarToggle()">Cancelar</button>
+                <button type="submit" class="btn-pa-primary" id="btnConfirmarToggle">Confirmar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .estado-badge, .rol-badge {
+        display: inline-block;
+        padding: 0.2em 0.65em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 50px;
+    }
+    .action-btn {
+        width: 32px; height: 32px;
+        border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        cursor: pointer;
+        transition: background var(--ease), border-color var(--ease);
+        text-decoration: none;
+        color: var(--pa-muted);
+    }
+    .action-btn.edit:hover       { background: rgba(59,130,246,.12); border-color: var(--pa-info);   color: var(--pa-info); }
+    .action-btn.deactivate:hover { background: rgba(233,69,96,.12);  border-color: var(--pa-accent); color: var(--pa-accent); }
+    .action-btn.activate:hover   { background: rgba(34,197,94,.12);  border-color: #22c55e;          color: #22c55e; }
+</style>
+
+<script>
+    // ── Filtros ───────────────────────────────────────────────────────────
+    function filtrar() {
+        const q      = document.getElementById('buscador').value.toLowerCase();
+        const rol    = document.getElementById('filtroRol').value;
+        const estado = document.getElementById('filtroEstado').value;
+        const filas  = document.querySelectorAll('#tablaUsuarios tbody tr');
+        let visibles = 0;
+
+        filas.forEach(tr => {
+            const textoOk  = !q || tr.textContent.toLowerCase().includes(q);
+            const rolOk    = !rol    || tr.dataset.rol    === rol;
+            const estadoOk = !estado || tr.dataset.estado === estado;
+            const mostrar  = textoOk && rolOk && estadoOk;
+            tr.style.display = mostrar ? '' : 'none';
+            if (mostrar) visibles++;
+        });
+
+        const t = document.getElementById('totalVisible');
+        if (t) t.textContent = visibles;
+    }
+
+    document.getElementById('buscador').addEventListener('input', filtrar);
+    document.getElementById('filtroRol').addEventListener('change', filtrar);
+    document.getElementById('filtroEstado').addEventListener('change', filtrar);
+
+    // ── Modal toggle activo/inactivo ──────────────────────────────────────
+    function confirmarToggle(id, nombre, estaActivo) {
+        const icono   = document.getElementById('iconoToggle');
+        const faIcono = document.getElementById('faIconoToggle');
+        const titulo  = document.getElementById('tituloToggle');
+        const msg     = document.getElementById('msgToggle');
+        const btn     = document.getElementById('btnConfirmarToggle');
+
+        if (estaActivo) {
+            icono.style.background  = 'rgba(233,69,96,.12)';
+            faIcono.className       = 'fa-solid fa-user-slash';
+            faIcono.style.color     = 'var(--pa-accent)';
+            titulo.textContent      = 'Desactivar usuario';
+            msg.textContent         = `¿Desactivar a "${nombre}"? No podrá iniciar sesión hasta ser reactivado.`;
+            btn.style.background    = '#ef4444';
+            btn.style.borderColor   = '#ef4444';
+            btn.textContent         = 'Sí, desactivar';
+        } else {
+            icono.style.background  = 'rgba(34,197,94,.12)';
+            faIcono.className       = 'fa-solid fa-user-check';
+            faIcono.style.color     = '#22c55e';
+            titulo.textContent      = 'Activar usuario';
+            msg.textContent         = `¿Reactivar a "${nombre}"? Podrá volver a iniciar sesión.`;
+            btn.style.background    = '#22c55e';
+            btn.style.borderColor   = '#22c55e';
+            btn.textContent         = 'Sí, activar';
+        }
+
+        document.getElementById('formToggle').action = '/Usuarios/ToggleActivo/' + id;
+        document.getElementById('modalToggle').style.display = 'flex';
+    }
+
+    function cerrarToggle() {
+        document.getElementById('modalToggle').style.display = 'none';
+    }
+
+    document.getElementById('modalToggle').addEventListener('click', function (e) {
+        if (e.target === this) cerrarToggle();
+    });
+</script>
+</body>
+</html>

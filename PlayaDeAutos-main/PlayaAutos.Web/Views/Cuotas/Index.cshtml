@@ -1,0 +1,404 @@
+@model List<PlayaAutos.Web.Models.CuotaListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Cuotas";
+    var filtroActual = ViewBag.FiltroActual as string ?? "todas";
+    var rolActual = Context.Session.GetString("Rol") ?? "";
+    var puedeRevisarPagos = rolActual == "AdministradorP" || rolActual == "Cajero";
+
+    var gruposVenta = Model
+        .GroupBy(c => c.VentaId)
+        .Select(g => new
+        {
+            VentaId = g.Key,
+            Cliente = g.First().Cliente,
+            Vehiculo = g.First().Vehiculo,
+            Total = g.Count(),
+            Pendientes = g.Count(c => c.Estado != "Pagada"),
+            Cuotas = g.OrderBy(c => c.NumeroCuota).ToList()
+        })
+        .OrderBy(g => g.VentaId)
+        .ToList();
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Cuotas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4>
+                        <i class="fa-solid fa-calendar-dollar me-2" style="color:var(--pa-accent);"></i>
+                        Cuotas
+                    </h4>
+                    <p>Gestión de cuotas de ventas a crédito</p>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="/Cuotas/ExportarExcel"
+                       class="btn-pa-ghost"
+                       title="Exportar a Excel">
+                        <i class="fa-solid fa-file-excel me-1"></i>
+                        Exportar Todo
+                    </a>
+                </div>
+            </div>
+
+            @if (TempData["Exito"] != null)
+            {
+                <div class="pa-alert success mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <span><i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]</span>
+                    @if (TempData["TicketCuotaId"] != null)
+                    {
+                        <a href="/Cuotas/DescargarTicket/@TempData["TicketCuotaId"]"
+                           class="btn-pa-primary"
+                           style="font-size:0.82rem;padding:0.35rem 0.9rem;background:#22c55e;border-color:#22c55e;">
+                            <i class="fa-solid fa-receipt me-1"></i> Descargar ticket
+                        </a>
+                    }
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+                </div>
+            }
+
+            <!-- Filtros -->
+            <div class="pa-card p-3 mb-3">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="/Cuotas?estado=" class="filtro-btn @(string.IsNullOrEmpty(filtroActual) || filtroActual == "todas" ? "active" : "")">
+                        Todas
+                    </a>
+                    <a href="/Cuotas?estado=Pendiente" class="filtro-btn @(filtroActual == "Pendiente" ? "active" : "")">
+                        <i class="fa-solid fa-clock me-1"></i>Pendientes
+                    </a>
+                    <a href="/Cuotas?estado=EnRevision" class="filtro-btn @(filtroActual == "EnRevision" ? "active" : "")">
+                        <i class="fa-solid fa-hourglass-half me-1"></i>En revisión
+                    </a>
+                    <a href="/Cuotas?estado=Pagada" class="filtro-btn @(filtroActual == "Pagada" ? "active" : "")">
+                        <i class="fa-solid fa-check me-1"></i>Pagadas
+                    </a>
+                    <a href="/Cuotas?estado=Vencida" class="filtro-btn @(filtroActual == "Vencida" ? "active" : "")">
+                        <i class="fa-solid fa-exclamation-triangle me-1"></i>Vencidas
+                    </a>
+                    <div class="ms-auto input-wrapper" style="max-width:280px;">
+                        <input type="text" id="buscador" class="pa-input"
+                               placeholder="Buscar por cliente, vehículo..." />
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grupos por venta -->
+            @if (!Model.Any())
+            {
+                <div class="pa-card" style="text-align:center;padding:4rem 2rem;">
+                    <i class="fa-solid fa-calendar-dollar" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                    <p style="color:var(--pa-muted);">No hay cuotas registradas.</p>
+                </div>
+            }
+            else
+            {
+                <div id="listaVentas">
+                    @foreach (var g in gruposVenta)
+                    {
+                        var acordeonId = $"venta-{g.VentaId}";
+                        var tieneVencidas = g.Cuotas.Any(c => c.Estado == "Pendiente" && c.FechaVencimiento < DateTime.Now);
+
+                        <div class="venta-grupo pa-card mb-2"
+                             data-cliente="@g.Cliente.ToLower()" data-vehiculo="@g.Vehiculo.ToLower()">
+
+                            <!-- Cabecera de la venta -->
+                            <div class="venta-header d-flex align-items-center gap-3 p-3"
+                                 onclick="toggleGrupo('@acordeonId')" style="cursor:pointer;">
+
+                                <div class="chevron-icon" id="chevron-@acordeonId">
+                                    <i class="fa-solid fa-chevron-right" style="font-size:0.75rem;color:var(--pa-muted);transition:transform .2s;"></i>
+                                </div>
+
+                                <div style="font-family:monospace;font-size:0.8rem;color:var(--pa-muted);min-width:50px;">
+                                    #@g.VentaId
+                                </div>
+
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-weight:600;font-size:0.92rem;">@g.Cliente</div>
+                                    <div style="font-size:0.8rem;color:var(--pa-muted);">@g.Vehiculo</div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (tieneVencidas)
+                                    {
+                                        <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                                            <i class="fa-solid fa-exclamation-triangle fa-xs me-1"></i>Vencida(s)
+                                        </span>
+                                    }
+                                    else if (g.Pendientes > 0)
+                                    {
+                                        <span class="estado-badge" style="background:rgba(234,179,8,.12);color:#ca8a04;">
+                                            <i class="fa-solid fa-clock fa-xs me-1"></i>@g.Pendientes pendiente(s)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">
+                                            <i class="fa-solid fa-check fa-xs me-1"></i>Al día
+                                        </span>
+                                    }
+                                    <span style="font-size:0.78rem;color:var(--pa-muted);">
+                                        @g.Total cuota(s)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Detalle de cuotas (colapsable) -->
+                            <div class="venta-cuotas" id="@acordeonId" style="display:none;border-top:1px solid var(--pa-border);">
+                                <div style="overflow-x:auto;">
+                                    <table class="pa-table" style="margin-bottom:0;">
+                                        <thead>
+                                            <tr>
+                                                <th>Cuota</th>
+                                                <th>Monto</th>
+                                                <th>Vencimiento</th>
+                                                <th>Estado</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var c in g.Cuotas)
+                                            {
+                                                var esVencida = c.Estado == "Pendiente" && c.FechaVencimiento < DateTime.Now;
+                                                <tr>
+                                                    <td style="font-weight:600;">
+                                                        @c.NumeroCuota / @(c.CantidadCuotas ?? g.Total)
+                                                    </td>
+                                                    <td style="font-weight:600;">
+                                                        Gs. @c.Monto.ToString("N0")
+                                                    </td>
+                                                    <td style="font-size:0.85rem;color:@(esVencida ? "#ef4444" : "inherit")">
+                                                        @c.FechaVencimiento.ToString("dd/MM/yyyy")
+                                                    </td>
+                                                    <td>
+                                                        @switch (c.Estado)
+                                                        {
+                                                            case "Pagada":
+                                                                <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">
+                                                                    <i class="fa-solid fa-check fa-xs me-1"></i>Pagada
+                                                                </span>
+                                                                break;
+                                                            case "Pendiente":
+                                                                if (esVencida)
+                                                                {
+                                                                    <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                                                                        <i class="fa-solid fa-exclamation-triangle fa-xs me-1"></i>Vencida
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="estado-badge" style="background:rgba(234,179,8,.12);color:#ca8a04;">
+                                                                        <i class="fa-solid fa-clock fa-xs me-1"></i>Pendiente
+                                                                    </span>
+                                                                }
+                                                                break;
+                                                            case "EnRevision":
+                                                                <span class="estado-badge" style="background:rgba(59,130,246,.12);color:#3b82f6;" title="El cliente informó el pago desde la app">
+                                                                    <i class="fa-solid fa-hourglass-half fa-xs me-1"></i>En revisión
+                                                                </span>
+                                                                break;
+                                                            default:
+                                                                <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                                                                    @c.Estado
+                                                                </span>
+                                                                break;
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex gap-1">
+                                                            @if (c.Estado == "EnRevision")
+                                                            {
+                                                                if (c.SolicitudPagoId != null)
+                                                                {
+                                                                    <button type="button" class="action-btn comprobante" title="Ver comprobante enviado por el cliente"
+                                                                            onclick="verComprobante('/Cuotas/ComprobanteSolicitud/@c.SolicitudPagoId')">
+                                                                        <i class="fa-solid fa-image"></i>
+                                                                    </button>
+                                                                }
+                                                                if (puedeRevisarPagos)
+                                                                {
+                                                                    <a href="/Ventas/Pendientes?tab=cuotas" class="action-btn pagar" title="Revisar pago en Pendientes">
+                                                                        <i class="fa-solid fa-clipboard-check"></i>
+                                                                    </a>
+                                                                }
+                                                            }
+                                                            else if (c.Estado != "Pagada")
+                                                            {
+                                                                <a href="/Cuotas/Pagar/@c.CuotaId" class="action-btn pagar" title="Registrar pago">
+                                                                    <i class="fa-solid fa-money-bill-wave"></i>
+                                                                </a>
+                                                            }
+                                                            else
+                                                            {
+                                                                <a href="/Cuotas/DescargarTicket/@c.CuotaId" class="action-btn ticket" title="Descargar ticket de pago">
+                                                                    <i class="fa-solid fa-receipt"></i>
+                                                                </a>
+                                                                @if (!string.IsNullOrEmpty(c.ComprobanteImagen))
+                                                                {
+                                                                    <button type="button" class="action-btn comprobante" title="Ver comprobante"
+                                                                            onclick="verComprobante('@c.ComprobanteImagen')">
+                                                                        <i class="fa-solid fa-image"></i>
+                                                                    </button>
+                                                                }
+                                                                else if (c.SolicitudPagoId != null)
+                                                                {
+                                                                    <button type="button" class="action-btn comprobante" title="Ver comprobante enviado por el cliente (app)"
+                                                                            onclick="verComprobante('/Cuotas/ComprobanteSolicitud/@c.SolicitudPagoId')">
+                                                                        <i class="fa-solid fa-image"></i>
+                                                                    </button>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                    <span id="totalVisible">@gruposVenta.Count</span> venta(s) — @Model.Count cuota(s)
+                </p>
+            }
+        </div>
+    </div>
+
+    <!-- Modal para ver comprobante -->
+    <div id="modalComprobante" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;align-items:center;justify-content:center;" onclick="this.style.display='none'">
+        <img id="imgComprobante" src="" style="max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;" />
+    </div>
+
+    <style>
+            .estado-badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.2em 0.65em;
+                font-size: 0.75rem;
+                font-weight: 600;
+                border-radius: 50px;
+                white-space: nowrap;
+            }
+
+            .filtro-btn {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.3rem 0.8rem;
+                border-radius: 8px;
+                border: 1px solid var(--pa-border);
+                font-size: 0.82rem;
+                color: var(--pa-muted);
+                text-decoration: none;
+                transition: background var(--ease), color var(--ease), border-color var(--ease);
+            }
+
+                .filtro-btn:hover {
+                    background: rgba(255,255,255,.05);
+                    color: var(--pa-text);
+                }
+
+                .filtro-btn.active {
+                    background: rgba(233,69,96,.1);
+                    border-color: var(--pa-accent);
+                    color: var(--pa-accent);
+                }
+
+            .venta-grupo {
+                overflow: hidden;
+            }
+
+            .venta-header:hover {
+                background: rgba(255,255,255,.03);
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 7px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8rem;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                cursor: pointer;
+                transition: background var(--ease), border-color var(--ease);
+                color: var(--pa-muted);
+                text-decoration: none;
+            }
+
+                .action-btn.pagar:hover {
+                    background: rgba(34,197,94,.12);
+                    border-color: #22c55e;
+                    color: #22c55e;
+                }
+
+                .action-btn.ticket:hover {
+                    background: rgba(59,130,246,.12);
+                    border-color: #3b82f6;
+                    color: #3b82f6;
+                }
+
+                .action-btn.comprobante:hover {
+                    background: rgba(168,85,247,.12);
+                    border-color: #a855f7;
+                    color: #a855f7;
+                }
+    </style>
+
+    <script>
+            function toggleGrupo(id) {
+                const panel = document.getElementById(id);
+                const chevron = document.getElementById('chevron-' + id)?.querySelector('i');
+                const open = panel.style.display !== 'none';
+                panel.style.display = open ? 'none' : 'block';
+                if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+            }
+
+            document.getElementById('buscador').addEventListener('input', function () {
+                const q = this.value.toLowerCase().trim();
+                let vis = 0;
+                document.querySelectorAll('.venta-grupo').forEach(el => {
+                    const cliente  = el.dataset.cliente  || '';
+                    const vehiculo = el.dataset.vehiculo || '';
+                    const ok = !q || cliente.includes(q) || vehiculo.includes(q);
+                    el.style.display = ok ? '' : 'none';
+                    if (ok) vis++;
+                });
+                document.getElementById('totalVisible').textContent = vis;
+            });
+
+            function verComprobante(url) {
+                document.getElementById('imgComprobante').src = url;
+                document.getElementById('modalComprobante').style.display = 'flex';
+            }
+    </script>
+</body>
+</html>

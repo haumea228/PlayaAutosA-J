@@ -1,0 +1,187 @@
+@model List<PlayaAutos.Web.Models.NotaCreditoListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Notas de Crédito";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Notas de Crédito</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h4>
+                    <i class="fa-solid fa-file-circle-minus me-2" style="color:#22c55e;"></i>
+                    Notas de Crédito
+                </h4>
+                <p>Historial de notas de crédito por permutas</p>
+            </div>
+        </div>
+
+        @if (TempData["Exito"] != null)
+        {
+            <div class="pa-alert success mb-3">
+                <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+            </div>
+        }
+
+        <!-- Filtros -->
+        <div class="pa-card p-3 mb-3">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="input-wrapper" style="max-width:350px;flex:1;">
+                    <input type="text" id="buscador" class="pa-input"
+                           placeholder="Buscar por número, cliente, vehículo..." />
+                    <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                </div>
+                <input type="date" id="filtroFecha" class="pa-input" style="max-width:180px;"
+                       onchange="filtrar()" />
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="pa-card" style="overflow:hidden;">
+            @if (!Model.Any())
+            {
+                <div style="text-align:center;padding:4rem 2rem;">
+                    <i class="fa-solid fa-file-circle-minus"
+                       style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                    <p style="color:var(--pa-muted);margin:0;">No hay notas de crédito registradas.</p>
+                    <p style="color:var(--pa-muted);font-size:0.85rem;margin-top:0.5rem;">
+                        Se generan automáticamente al registrar una venta con permuta.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="pa-table" id="tablaNotas">
+                        <thead>
+                            <tr>
+                                <th>N° Nota</th>
+                                <th>Timbrado</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Vehículo vendido</th>
+                                <th>Vehículo permuta</th>
+                                <th>Monto</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var n in Model)
+                            {
+                                <tr data-fecha="@n.FechaEmision.ToString("yyyy-MM-dd")">
+                                    <td>
+                                        <span style="font-family:monospace;font-weight:600;font-size:0.85rem;color:#22c55e;">
+                                            @n.NumeroNota
+                                        </span>
+                                    </td>
+                                    <td style="font-size:0.82rem;color:var(--pa-muted);">@n.Timbrado</td>
+                                    <td style="font-size:0.85rem;">@n.FechaEmision.ToString("dd/MM/yyyy")</td>
+                                    <td style="font-weight:500;">@n.Cliente</td>
+                                    <td style="font-size:0.85rem;">@n.VehiculoVenta</td>
+                                    <td style="font-size:0.85rem;">
+                                        @if (!string.IsNullOrEmpty(n.VehiculoPermuta))
+                                        {
+                                            <span style="display:inline-flex;align-items:center;gap:4px;">
+                                                <i class="fa-solid fa-arrows-rotate fa-xs" style="color:#22c55e;"></i>
+                                                @n.VehiculoPermuta
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--pa-muted);">—</span>
+                                        }
+                                    </td>
+                                    <td style="font-weight:700;color:#22c55e;">
+                                        Gs. @n.Monto.ToString("N0")
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="/NotasCredito/Detalle/@n.NotaCreditoId"
+                                               class="action-btn view" title="Ver detalle">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <a href="/NotasCredito/DescargarPDF/@n.NotaCreditoId"
+                                               class="action-btn pdf" title="Descargar PDF">
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (Model.Any())
+        {
+            <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                <span id="totalVisible">@Model.Count</span> nota(s) de crédito
+            </p>
+        }
+    </div>
+</div>
+
+<style>
+    .action-btn {
+        width: 32px; height: 32px;
+        border-radius: 7px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        cursor: pointer;
+        transition: background var(--ease), border-color var(--ease);
+        color: var(--pa-muted);
+        text-decoration: none;
+    }
+    .action-btn.view:hover { background: rgba(34,197,94,.12); border-color: #22c55e; color: #22c55e; }
+    .action-btn.pdf:hover  { background: rgba(239,68,68,.12); border-color: #ef4444; color: #ef4444; }
+</style>
+
+<script>
+    function filtrar() {
+        const q     = document.getElementById('buscador').value.toLowerCase();
+        const fecha = document.getElementById('filtroFecha').value;
+        const filas = document.querySelectorAll('#tablaNotas tbody tr');
+        let visibles = 0;
+
+        filas.forEach(tr => {
+            const textoOk = !q     || tr.textContent.toLowerCase().includes(q);
+            const fechaOk = !fecha || tr.dataset.fecha === fecha;
+            const mostrar = textoOk && fechaOk;
+            tr.style.display = mostrar ? '' : 'none';
+            if (mostrar) visibles++;
+        });
+
+        document.getElementById('totalVisible').textContent = visibles;
+    }
+
+    document.getElementById('buscador').addEventListener('input', filtrar);
+</script>
+</body>
+</html>

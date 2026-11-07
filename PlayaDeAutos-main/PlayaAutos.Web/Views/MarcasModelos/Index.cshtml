@@ -1,0 +1,425 @@
+﻿@model PlayaAutos.Web.Models.MarcasModelosViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Marcas y Modelos";
+    var marcasConModelos = Model.Marcas
+        .Select(m => new
+        {
+            Marca = m,
+            Modelos = Model.Modelos.Where(mo => mo.MarcaId == m.MarcaId).ToList()
+        })
+        .OrderBy(m => m.Marca.Nombre)
+        .ToList();
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Marcas y Modelos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+        @await Html.PartialAsync("_Sidebar")
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4><i class="fa-solid fa-book-open me-2" style="color:var(--pa-accent);"></i>Marcas y Modelos</h4>
+                    <p>Catálogo de vehículos disponibles</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-pa-primary" onclick="abrirModalMarca()">
+                        <i class="fa-solid fa-plus"></i> Nueva Marca
+                    </button>
+                </div>
+            </div>
+
+            @if (TempData["Exito"] != null)
+            {
+                <div class="pa-alert success mb-3"><i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]</div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="pa-alert danger mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]</div>
+            }
+
+            <!-- Buscador -->
+            <div class="pa-card p-3 mb-3">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-wrapper" style="max-width:320px;flex:1;">
+                        <input type="text" id="buscador" class="pa-input"
+                               placeholder="Buscar por marca o modelo..." />
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de marcas con sus modelos (acordeón) -->
+            @if (!marcasConModelos.Any())
+            {
+                <div class="pa-card" style="text-align:center;padding:4rem 2rem;">
+                    <i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                    <p style="color:var(--pa-muted);">No hay marcas registradas.</p>
+                    <button class="btn-pa-primary mt-3 d-inline-flex" onclick="abrirModalMarca()">
+                        <i class="fa-solid fa-plus"></i> Crear primera marca
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div id="listaMarcas">
+                    @foreach (var g in marcasConModelos)
+                    {
+                        var acordeonId = $"marca-{g.Marca.MarcaId}";
+                        var cantidadModelos = g.Modelos.Count;
+
+                        <div class="marca-grupo pa-card mb-2"
+                             data-marca="@g.Marca.Nombre.ToLower()"
+                             data-modelos="@string.Join(" ", g.Modelos.Select(m => m.Nombre.ToLower()))">
+
+                            <!-- Cabecera de la marca -->
+                            <div class="marca-header d-flex align-items-center gap-3 p-3"
+                                 onclick="toggleGrupo('@acordeonId')" style="cursor:pointer;">
+
+                                <div class="chevron-icon" id="chevron-@acordeonId">
+                                    <i class="fa-solid fa-chevron-right" style="font-size:0.75rem;color:var(--pa-muted);transition:transform .2s;"></i>
+                                </div>
+
+                                <div style="width:42px;height:42px;border-radius:10px;
+                                    background:@(g.Marca.Activo ? "rgba(233,69,96,.12)" : "rgba(239,68,68,.08)");
+                                    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                                    font-weight:700;font-size:1rem;
+                                    color:@(g.Marca.Activo ? "var(--pa-accent)" : "var(--pa-muted)");">
+                                    @(g.Marca.Nombre.Length > 0 ? g.Marca.Nombre[0].ToString().ToUpper() : "?")
+                                </div>
+
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-weight:600;font-size:0.95rem;">@g.Marca.Nombre</div>
+                                    <div style="font-size:0.78rem;color:var(--pa-muted);">
+                                        @cantidadModelos modelo(s)
+                                    </div>
+                                </div>
+
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (g.Marca.Activo)
+                                    {
+                                        <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">
+                                            <i class="fa-solid fa-check fa-xs me-1"></i>Activo
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                                            <i class="fa-solid fa-ban fa-xs me-1"></i>Inactivo
+                                        </span>
+                                    }
+                                    <button class="action-btn edit" onclick="event.stopPropagation();editarMarca(@g.Marca.MarcaId, '@g.Marca.Nombre.Replace("'", "\\'")')" title="Editar marca">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="event.stopPropagation();eliminarMarca(@g.Marca.MarcaId, '@g.Marca.Nombre.Replace("'", "\\'")')" title="Eliminar marca">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Detalle de modelos (colapsable) -->
+                            <div class="marca-modelos" id="@acordeonId" style="display:none;border-top:1px solid var(--pa-border);">
+                                <div class="p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span style="font-size:0.8rem;color:var(--pa-muted);font-weight:600;">
+                                            <i class="fa-solid fa-car-side me-1" style="color:var(--pa-accent);"></i>
+                                            Modelos de @g.Marca.Nombre
+                                        </span>
+                                        <button class="btn-pa-primary" style="font-size:0.78rem;padding:0.35rem 0.8rem;"
+                                                onclick="abrirModalModeloConMarca(@g.Marca.MarcaId, '@g.Marca.Nombre.Replace("'", "\\'")')">
+                                            <i class="fa-solid fa-plus"></i> Agregar modelo
+                                        </button>
+                                    </div>
+                                    @if (!g.Modelos.Any())
+                                    {
+                                        <p style="color:var(--pa-muted);font-size:0.85rem;text-align:center;padding:1rem;">
+                                            No hay modelos para esta marca.
+                                        </p>
+                                    }
+                                    else
+                                    {
+                                        <div style="overflow-x:auto;">
+                                            <table class="pa-table" style="margin-bottom:0;">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Modelo</th>
+                                                        <th>Estado</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var modelo in g.Modelos)
+                                                    {
+                                                        <tr>
+                                                            <td style="font-weight:600;">@modelo.Nombre</td>
+                                                            <td>
+                                                                <span class="estado-badge" style="background:@(modelo.Activo ? "rgba(34,197,94,.12)" : "rgba(239,68,68,.12)");color:@(modelo.Activo ? "#22c55e" : "#ef4444");">
+                                                                    @(modelo.Activo ? "Activo" : "Inactivo")
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div class="d-flex gap-2">
+                                                                    <button class="action-btn edit" onclick="editarModelo(@modelo.ModeloId, '@modelo.Nombre.Replace("'", "\\'")', @modelo.MarcaId)" title="Editar modelo">
+                                                                        <i class="fa-solid fa-pen"></i>
+                                                                    </button>
+                                                                    <button class="action-btn delete" onclick="eliminarModelo(@modelo.ModeloId, '@modelo.Nombre.Replace("'", "\\'")')" title="Eliminar modelo">
+                                                                        <i class="fa-solid fa-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                    <span id="totalVisible">@marcasConModelos.Count</span> marca(s) — @Model.Modelos.Count modelo(s)
+                </p>
+            }
+        </div>
+    </div>
+
+    <!-- ==================== MODALES ==================== -->
+    <!-- Modal Marca -->
+    <div id="modalMarca" class="pa-modal" style="display:none;">
+        <div class="pa-modal-content">
+            <h5 id="modalMarcaTitulo">Nueva Marca</h5>
+            <form id="formMarca" onsubmit="guardarMarca(event)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="marcaId" />
+                <div class="mb-3">
+                    <label class="pa-label">Nombre *</label>
+                    <input type="text" id="marcaNombre" class="pa-input" required maxlength="50" placeholder="Ej: Toyota" autofocus />
+                </div>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn-pa-ghost" onclick="cerrarModal('modalMarca')">Cancelar</button>
+                    <button type="submit" class="btn-pa-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Modelo -->
+    <div id="modalModelo" class="pa-modal" style="display:none;">
+        <div class="pa-modal-content">
+            <h5 id="modalModeloTitulo">Nuevo Modelo</h5>
+            <form id="formModelo" onsubmit="guardarModelo(event)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="modeloId" />
+                <div class="mb-3">
+                    <label class="pa-label">Marca *</label>
+                    <select id="modeloMarcaId" class="pa-input" required>
+                        <option value="">— Seleccione una marca —</option>
+                        @foreach (var m in Model.Marcas.Where(m => m.Activo))
+                        {
+                            <option value="@m.MarcaId">@m.Nombre</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="pa-label">Nombre *</label>
+                    <input type="text" id="modeloNombre" class="pa-input" required maxlength="100" placeholder="Ej: Corolla" />
+                </div>
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn-pa-ghost" onclick="cerrarModal('modalModelo')">Cancelar</button>
+                    <button type="submit" class="btn-pa-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+            .estado-badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 0.2em 0.65em;
+                font-size: 0.75rem;
+                font-weight: 600;
+                border-radius: 50px;
+                white-space: nowrap;
+            }
+
+            .marca-grupo {
+                overflow: hidden;
+            }
+
+            .marca-header:hover {
+                background: rgba(255,255,255,.03);
+            }
+
+            .pa-modal {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.6);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+                display: none;
+            }
+
+            .pa-modal-content {
+                background: var(--pa-surface);
+                border: 1px solid var(--pa-border);
+                border-radius: 14px;
+                padding: 2rem;
+                max-width: 440px;
+                width: 90%;
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 7px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8rem;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                cursor: pointer;
+                transition: background var(--ease), border-color var(--ease);
+                color: var(--pa-muted);
+                text-decoration: none;
+            }
+
+                .action-btn.edit:hover {
+                    background: rgba(59,130,246,.12);
+                    border-color: var(--pa-info);
+                    color: var(--pa-info);
+                }
+
+                .action-btn.delete:hover {
+                    background: rgba(239,68,68,.12);
+                    border-color: #ef4444;
+                    color: #ef4444;
+                }
+    </style>
+
+    <script>
+            // ── ACORDEÓN ────────────────────────────────────────
+            function toggleGrupo(id) {
+                const panel = document.getElementById(id);
+                const chevron = document.getElementById('chevron-' + id)?.querySelector('i');
+                const open = panel.style.display !== 'none';
+                panel.style.display = open ? 'none' : 'block';
+                if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
+            }
+
+            // ── BÚSQUEDA ────────────────────────────────────────
+            document.getElementById('buscador').addEventListener('input', function () {
+                const q = this.value.toLowerCase().trim();
+                let vis = 0;
+                document.querySelectorAll('.marca-grupo').forEach(el => {
+                    const marca = el.dataset.marca || '';
+                    const modelos = el.dataset.modelos || '';
+                    const ok = !q || marca.includes(q) || modelos.includes(q);
+                    el.style.display = ok ? '' : 'none';
+                    if (ok) vis++;
+                });
+                document.getElementById('totalVisible').textContent = vis;
+            });
+
+            // ── MARCAS ──────────────────────────────────────────
+            function abrirModalMarca() {
+                document.getElementById('modalMarcaTitulo').textContent = 'Nueva Marca';
+                document.getElementById('marcaId').value = '';
+                document.getElementById('marcaNombre').value = '';
+                document.getElementById('modalMarca').style.display = 'flex';
+                document.getElementById('marcaNombre').focus();
+            }
+            function editarMarca(id, nombre) {
+                document.getElementById('modalMarcaTitulo').textContent = 'Editar Marca';
+                document.getElementById('marcaId').value = id;
+                document.getElementById('marcaNombre').value = nombre;
+                document.getElementById('modalMarca').style.display = 'flex';
+                document.getElementById('marcaNombre').focus();
+            }
+            async function guardarMarca(e) {
+                e.preventDefault();
+                const id = document.getElementById('marcaId').value;
+                const nombre = document.getElementById('marcaNombre').value.trim();
+                if (!nombre) return;
+                const url = id ? `/MarcasModelos/EditarMarca/${id}` : '/MarcasModelos/CrearMarca';
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+                    body: JSON.stringify({ nombre })
+                });
+                if (resp.ok) { cerrarModal('modalMarca'); location.reload(); }
+            }
+            async function eliminarMarca(id, nombre) {
+                if (!confirm(`¿Eliminar la marca "${nombre}"?`)) return;
+                const resp = await fetch(`/MarcasModelos/EliminarMarca/${id}`, {
+                    method: 'POST', headers: { 'RequestVerificationToken': getToken() }
+                });
+                if (resp.ok) location.reload(); else alert('No se puede eliminar. Tiene modelos asociados.');
+            }
+
+            // ── MODELOS ─────────────────────────────────────────
+            function abrirModalModeloConMarca(marcaId, marcaNombre) {
+                document.getElementById('modalModeloTitulo').textContent = 'Nuevo Modelo - ' + marcaNombre;
+                document.getElementById('modeloId').value = '';
+                document.getElementById('modeloMarcaId').value = marcaId;
+                document.getElementById('modeloNombre').value = '';
+                document.getElementById('modalModelo').style.display = 'flex';
+                document.getElementById('modeloNombre').focus();
+            }
+            function editarModelo(id, nombre, marcaId) {
+                document.getElementById('modalModeloTitulo').textContent = 'Editar Modelo';
+                document.getElementById('modeloId').value = id;
+                document.getElementById('modeloMarcaId').value = marcaId;
+                document.getElementById('modeloNombre').value = nombre;
+                document.getElementById('modalModelo').style.display = 'flex';
+                document.getElementById('modeloNombre').focus();
+            }
+            async function guardarModelo(e) {
+                e.preventDefault();
+                const id = document.getElementById('modeloId').value;
+                const data = {
+                    marcaId: parseInt(document.getElementById('modeloMarcaId').value),
+                    nombre: document.getElementById('modeloNombre').value.trim()
+                };
+                if (!data.marcaId || !data.nombre) return;
+                const url = id ? `/MarcasModelos/EditarModelo/${id}` : '/MarcasModelos/CrearModelo';
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
+                    body: JSON.stringify(data)
+                });
+                if (resp.ok) { cerrarModal('modalModelo'); location.reload(); }
+            }
+            async function eliminarModelo(id, nombre) {
+                if (!confirm(`¿Eliminar el modelo "${nombre}"?`)) return;
+                const resp = await fetch(`/MarcasModelos/EliminarModelo/${id}`, {
+                    method: 'POST', headers: { 'RequestVerificationToken': getToken() }
+                });
+                if (resp.ok) location.reload(); else alert('No se puede eliminar.');
+            }
+
+            function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
+            function getToken() { return document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''; }
+            document.querySelectorAll('.pa-modal').forEach(modal => {
+                modal.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+            });
+    </script>
+</body>
+</html>

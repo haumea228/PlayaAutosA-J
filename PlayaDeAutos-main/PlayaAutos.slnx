@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PlayaAutos.API/PlayaAutos.API.csproj" />
+  <Project Path="PlayaAutos.Web/PlayaAutos.Web.csproj" Id="4f7e4005-a372-468a-89c2-4231a41caceb" />
+</Solution>

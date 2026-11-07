@@ -1,0 +1,41 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+packages/
+
+# ASP.NET Core
+PlayaAutos.Web/wwwroot/uploads/
+
+# Secrets / config local — copiar appsettings.Example.json → appsettings.json y completar
+appsettings.json
+appsettings.Development.json
+**/secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Comprobantes de pago de cuotas subidos desde la app (datos de clientes)
+PlayaAutos.API/App_Data/

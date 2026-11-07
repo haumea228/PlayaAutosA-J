@@ -1,0 +1,294 @@
+@model List<PlayaAutos.Web.Models.CitaListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Mis Citas";
+    var nombreCliente = Context.Session.GetString("Nombre") ?? "Cliente";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis Citas — A&amp;J Autos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { margin: 0; }
+
+        .mc-header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--pa-surface); border-bottom: 1px solid var(--pa-border);
+            box-shadow: 0 2px 16px rgba(0,0,0,.4);
+            padding: 0 2rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .cat-brand { display: flex; align-items: center; gap: .6rem; text-decoration: none; }
+        .cat-brand-icon {
+            width: 36px; height: 36px; border-radius: 9px;
+            background: var(--pa-accent); display: flex; align-items: center;
+            justify-content: center; color: #fff; font-weight: 800; font-size: .95rem;
+        }
+        .cat-brand-name { font-size: 1.15rem; font-weight: 800; color: var(--pa-text); letter-spacing: -.3px; }
+        .cat-brand-name span { color: var(--pa-accent); }
+
+        .header-actions { display: flex; align-items: center; gap: .75rem; }
+        .btn-catalogo {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .45rem 1rem;
+            color: var(--pa-text); font-family: inherit; font-size: .85rem; font-weight: 600;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-catalogo:hover { border-color: var(--pa-accent); color: var(--pa-accent); }
+        .btn-salir {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .45rem .9rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .83rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-salir:hover { border-color: var(--pa-muted); color: var(--pa-text); }
+
+        .mc-page { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+        .mc-title-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;
+        }
+        .mc-title h1 { font-size: 1.6rem; font-weight: 800; color: var(--pa-text); margin: 0 0 .2rem; }
+        .mc-title p { font-size: .88rem; color: var(--pa-muted); margin: 0; }
+
+        .btn-nueva-cita {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: var(--pa-accent); color: #fff;
+            border: none; border-radius: 10px; padding: .65rem 1.25rem;
+            font-family: inherit; font-size: .9rem; font-weight: 700;
+            cursor: pointer; transition: background .2s; text-decoration: none;
+        }
+        .btn-nueva-cita:hover { background: var(--pa-accent-h); color: #fff; }
+
+        /* Alert */
+        .mc-alert {
+            padding: .85rem 1.1rem; border-radius: 10px; margin-bottom: 1.5rem;
+            display: flex; align-items: center; gap: .65rem; font-size: .88rem;
+        }
+        .mc-alert.success { background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3); color: var(--pa-success); }
+        .mc-alert.error   { background: rgba(233,69,96,.1);  border: 1px solid rgba(233,69,96,.3);  color: var(--pa-accent); }
+
+        /* Cita cards */
+        .cita-card {
+            background: var(--pa-surface); border: 1px solid var(--pa-border);
+            border-radius: 14px; margin-bottom: 1rem; overflow: hidden;
+            transition: border-color .2s;
+        }
+        .cita-card:hover { border-color: rgba(255,255,255,.15); }
+
+        .cita-card-header {
+            padding: 1rem 1.25rem;
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+            border-bottom: 1px solid var(--pa-border);
+            flex-wrap: wrap;
+        }
+        .cita-info-main { flex: 1; min-width: 200px; }
+        .cita-fecha {
+            font-size: 1.05rem; font-weight: 700; color: var(--pa-text); margin: 0 0 .25rem;
+        }
+        .cita-vehiculo { font-size: .85rem; color: var(--pa-muted); margin: 0; }
+        .cita-vehiculo i { color: var(--pa-accent); margin-right: .3rem; }
+
+        .estado-badge {
+            display: inline-flex; align-items: center; gap: .35rem;
+            padding: .35rem .85rem; border-radius: 20px;
+            font-size: .78rem; font-weight: 700; letter-spacing: .01em;
+            border: 1px solid currentColor; flex-shrink: 0;
+        }
+
+        .cita-card-body { padding: .85rem 1.25rem; }
+        .cita-meta-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .75rem;
+        }
+        .cita-meta-item { display: flex; align-items: center; gap: .5rem; }
+        .cita-meta-icon {
+            width: 30px; height: 30px; border-radius: 7px;
+            background: rgba(233,69,96,.1); display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+        }
+        .cita-meta-icon i { font-size: .75rem; color: var(--pa-accent); }
+        .cita-meta-label { font-size: .68rem; color: var(--pa-muted); margin: 0; }
+        .cita-meta-value { font-size: .82rem; font-weight: 600; color: var(--pa-text); margin: 0; }
+
+        .cita-card-footer {
+            padding: .7rem 1.25rem; border-top: 1px solid var(--pa-border);
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .cita-obs { font-size: .8rem; color: var(--pa-muted); font-style: italic; flex: 1; }
+
+        .btn-cancelar {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid rgba(233,69,96,.4);
+            border-radius: 8px; padding: .4rem .9rem;
+            color: var(--pa-accent); font-family: inherit; font-size: .8rem; font-weight: 600;
+            cursor: pointer; transition: all .2s;
+        }
+        .btn-cancelar:hover { background: rgba(233,69,96,.1); border-color: var(--pa-accent); }
+
+        .mc-empty {
+            text-align: center; padding: 4rem 2rem; color: var(--pa-muted);
+            background: var(--pa-surface); border: 1px solid var(--pa-border);
+            border-radius: 14px;
+        }
+        .mc-empty i { font-size: 3.5rem; opacity: .2; margin-bottom: 1rem; display: block; }
+        .mc-empty p { font-size: .95rem; margin: 0 0 1.5rem; }
+
+        @@media (max-width: 576px) {
+            .mc-page { padding: 1.25rem 1rem; }
+            .mc-header { padding: 0 1rem; }
+            .cita-meta-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="mc-header">
+    <a href="/Catalogo/IndexCliente" class="cat-brand">
+        <div class="cat-brand-icon">A</div>
+        <span class="cat-brand-name">A<span>&amp;J</span> Autos</span>
+    </a>
+    <div class="header-actions">
+        <a href="/Catalogo/IndexCliente" class="btn-catalogo">
+            <i class="fa-solid fa-car"></i> Catálogo
+        </a>
+        <a href="/Auth/Logout" class="btn-salir">
+            <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </a>
+    </div>
+</header>
+
+<!-- CONTENIDO -->
+<div class="mc-page">
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="mc-alert success">
+            <i class="fa-solid fa-circle-check"></i>
+            @TempData["Exito"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mc-alert error">
+            <i class="fa-solid fa-circle-xmark"></i>
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="mc-title-row">
+        <div class="mc-title">
+            <h1><i class="fa-solid fa-calendar-check me-2" style="color:var(--pa-accent);"></i>Mis Citas</h1>
+            <p>Hola <strong>@nombreCliente</strong> — aquí podés ver y gestionar tus solicitudes de citas.</p>
+        </div>
+        <a href="/MisCitas/Crear" class="btn-nueva-cita">
+            <i class="fa-solid fa-calendar-plus"></i> Agendar cita
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="mc-empty">
+            <i class="fa-solid fa-calendar-xmark"></i>
+            <p>Todavía no tenés citas agendadas.</p>
+            <a href="/MisCitas/Crear" class="btn-nueva-cita">
+                <i class="fa-solid fa-calendar-plus"></i> Agendar mi primera cita
+            </a>
+        </div>
+    }
+    else
+    {
+        foreach (var cita in Model)
+        {
+            var puedeCancel = cita.EstadoCitaId == 1 || cita.EstadoCitaId == 2;
+            var estadoColor = !string.IsNullOrEmpty(cita.EstadoColor) ? cita.EstadoColor : "#8b949e";
+
+            <div class="cita-card">
+                <div class="cita-card-header">
+                    <div class="cita-info-main">
+                        <p class="cita-fecha">
+                            <i class="fa-solid fa-calendar-day me-1" style="color:var(--pa-accent);"></i>
+                            @cita.FechaHora.ToString("dddd dd 'de' MMMM yyyy 'a las' HH:mm", new System.Globalization.CultureInfo("es-PY"))
+                        </p>
+                        @if (!string.IsNullOrEmpty(cita.Vehiculo))
+                        {
+                            <p class="cita-vehiculo">
+                                <i class="fa-solid fa-car"></i>@cita.Vehiculo
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="cita-vehiculo" style="color:var(--pa-muted);opacity:.6;">
+                                <i class="fa-solid fa-car"></i>Sin vehículo específico
+                            </p>
+                        }
+                    </div>
+                    <span class="estado-badge" style="color:@estadoColor; border-color:@estadoColor;">
+                        <i class="fa-solid fa-circle" style="font-size:.45rem;"></i>
+                        @cita.Estado
+                    </span>
+                </div>
+
+                <div class="cita-card-body">
+                    <div class="cita-meta-grid">
+                        <div class="cita-meta-item">
+                            <div class="cita-meta-icon"><i class="fa-solid fa-tag"></i></div>
+                            <div>
+                                <p class="cita-meta-label">Tipo</p>
+                                <p class="cita-meta-value">@cita.TipoCita</p>
+                            </div>
+                        </div>
+                        <div class="cita-meta-item">
+                            <div class="cita-meta-icon"><i class="fa-solid fa-user-tie"></i></div>
+                            <div>
+                                <p class="cita-meta-label">Vendedor asignado</p>
+                                <p class="cita-meta-value">@cita.Vendedor</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cita-card-footer">
+                    @if (!string.IsNullOrEmpty(cita.Observaciones))
+                    {
+                        <span class="cita-obs">
+                            <i class="fa-solid fa-comment-dots me-1"></i>@cita.Observaciones
+                        </span>
+                    }
+                    else
+                    {
+                        <span></span>
+                    }
+                    @if (puedeCancel)
+                    {
+                        <form asp-controller="MisCitas" asp-action="Cancelar" method="post"
+                              onsubmit="return confirm('¿Cancelar esta cita?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@cita.CitaId" />
+                            <button type="submit" class="btn-cancelar">
+                                <i class="fa-solid fa-xmark"></i> Cancelar cita
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

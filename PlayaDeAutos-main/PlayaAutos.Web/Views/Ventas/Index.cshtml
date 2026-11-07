@@ -1,0 +1,274 @@
+﻿@model List<PlayaAutos.Web.Models.VentaListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Ventas";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Ventas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Header -->
+        <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h4><i class="fa-solid fa-file-invoice-dollar me-2" style="color:var(--pa-accent);"></i>Ventas</h4>
+                <p>Registro y gestión de ventas</p>
+            </div>
+            <a href="/Ventas/Crear" class="btn-pa-primary">
+                <i class="fa-solid fa-plus"></i> Nueva venta
+            </a>
+        </div>
+
+        <!-- Alertas -->
+        @if (TempData["Exito"] != null)
+        {
+            <div class="pa-alert success mb-3">
+                <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+            </div>
+        }
+
+        <!-- Filtros -->
+        <div class="pa-card p-3 mb-3">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="input-wrapper" style="max-width:320px;flex:1;">
+                    <input type="text" id="buscador" class="pa-input"
+                           placeholder="Buscar por cliente, vehículo, vendedor..." />
+                    <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                </div>
+                    <select id="filtroEstado" class="pa-input" style="max-width:180px;">
+                        <option value="">Todos los estados</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Registrada">Registrada</option>
+                        <option value="Anulada">Anulada</option>
+                    </select>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="pa-card" style="overflow:hidden;">
+            @if (!Model.Any())
+            {
+                <div style="text-align:center;padding:4rem 2rem;">
+                    <i class="fa-solid fa-file-invoice-dollar" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                    <p style="color:var(--pa-muted);margin:0;">No hay ventas registradas.</p>
+                    <a href="/Ventas/Crear" class="btn-pa-primary mt-3 d-inline-flex">
+                        <i class="fa-solid fa-plus"></i> Registrar primera venta
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div style="overflow-x:auto;">
+                    <table class="pa-table" id="tablaVentas">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Vehículo</th>
+                                <th>Vendedor</th>
+                                <th>Tipo</th>
+                                <th>Forma pago</th>
+                                <th>Fecha</th>
+                                <th>Monto total</th>
+                                <th>Estado</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in Model)
+                            {
+                                <tr data-estado="@v.Estado">
+                                    <td style="font-family:monospace;font-size:0.8rem;color:var(--pa-muted);">
+                                        #@v.VentaId
+                                    </td>
+                                    <td style="font-weight:600;">@v.Cliente</td>
+                                    <td style="font-size:0.88rem;">@v.Vehiculo</td>
+                                    <td style="font-size:0.88rem;color:var(--pa-muted);">@v.Vendedor</td>
+                                    <td style="font-size:0.82rem;">@v.TipoVenta</td>
+                                    <td style="font-size:0.82rem;">@v.FormasPago</td>
+                                    <td style="font-size:0.85rem;">@v.FechaVenta.ToString("dd/MM/yyyy")</td>
+                                    <td style="font-weight:600;font-size:0.88rem;">
+                                        Gs. @v.MontoTotal.ToString("N0")
+                                    </td>
+                                        <td>
+                                            @if (v.Estado == "Pendiente")
+                                            {
+                                                <span class="estado-badge" style="background:rgba(234,179,8,.12);color:#ca8a04;">
+                                                    <i class="fa-solid fa-clock fa-xs me-1"></i>Pendiente
+                                                </span>
+                                            }
+                                            else if (v.Estado == "Registrada")
+                                            {
+                                                <span class="estado-badge" style="background:rgba(34,197,94,.12);color:#22c55e;">
+                                                    <i class="fa-solid fa-check fa-xs me-1"></i>Registrada
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="estado-badge" style="background:rgba(239,68,68,.12);color:#ef4444;">
+                                                    @v.Estado
+                                                </span>
+                                            }
+                                        </td>
+                                    <td>
+                                        @if (v.Estado == "Registrada")
+                                        {
+                                            <button type="button" class="action-btn delete"
+                                                    onclick="confirmarAnular(@v.VentaId, '@v.Cliente.Replace("'","\\'")')"
+                                                    title="Anular venta">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--pa-muted);font-size:0.75rem;">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (Model.Any())
+        {
+            <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                <span id="totalVisible">@Model.Count</span> venta(s)
+            </p>
+        }
+    </div>
+</div>
+
+<!-- Modal Anular -->
+<div id="modalAnular" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:var(--pa-surface);border:1px solid var(--pa-border);border-radius:14px;padding:2rem;max-width:460px;width:90%;">
+        <div style="text-align:center;margin-bottom:1.25rem;">
+            <div style="width:54px;height:54px;background:rgba(233,69,96,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;">
+                <i class="fa-solid fa-ban" style="color:var(--pa-accent);font-size:1.3rem;"></i>
+            </div>
+            <h5 style="font-weight:700;margin-bottom:0.25rem;">Anular venta</h5>
+            <p style="color:var(--pa-muted);font-size:0.9rem;margin:0;" id="msgAnular"></p>
+        </div>
+        <form id="formAnular" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="pa-label">Motivo de anulación *</label>
+                <textarea name="motivo" id="motivoAnular" class="pa-input" rows="3"
+                          placeholder="Describa el motivo de la anulación..." style="resize:vertical;"></textarea>
+                <span id="errorMotivo" style="font-size:0.78rem;color:#f87191;display:none;">
+                    El motivo es obligatorio.
+                </span>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn-pa-ghost" onclick="cerrarModalAnular()">Cancelar</button>
+                <button type="submit" class="btn-pa-primary" id="btnAnular"
+                        style="background:#ef4444;border-color:#ef4444;">
+                    <i class="fa-solid fa-ban me-1"></i>Confirmar anulación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .estado-badge {
+        display: inline-block;
+        padding: 0.2em 0.65em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 50px;
+    }
+    .action-btn {
+        width: 32px; height: 32px;
+        border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        cursor: pointer;
+        transition: background var(--ease), border-color var(--ease);
+        color: var(--pa-muted);
+    }
+    .action-btn.delete:hover { background: rgba(233,69,96,.12); border-color: var(--pa-accent); color: var(--pa-accent); }
+</style>
+
+<script>
+    // ── Buscador + filtro estado ──────────────────────────────────────────
+    function filtrar() {
+        const q      = document.getElementById('buscador').value.toLowerCase();
+        const estado = document.getElementById('filtroEstado').value;
+        const filas  = document.querySelectorAll('#tablaVentas tbody tr');
+        let visibles = 0;
+
+        filas.forEach(tr => {
+            const textoOk  = !q || tr.textContent.toLowerCase().includes(q);
+            const estadoOk = !estado || tr.dataset.estado === estado;
+            const mostrar  = textoOk && estadoOk;
+            tr.style.display = mostrar ? '' : 'none';
+            if (mostrar) visibles++;
+        });
+
+        const t = document.getElementById('totalVisible');
+        if (t) t.textContent = visibles;
+    }
+
+    document.getElementById('buscador').addEventListener('input', filtrar);
+    document.getElementById('filtroEstado').addEventListener('change', filtrar);
+
+    // ── Modal anular ─────────────────────────────────────────────────────
+    function confirmarAnular(id, cliente) {
+        document.getElementById('msgAnular').textContent =
+            `¿Está seguro que desea anular la venta #${id} del cliente "${cliente}"?`;
+        document.getElementById('formAnular').action = '/Ventas/Anular/' + id;
+        document.getElementById('motivoAnular').value = '';
+        document.getElementById('errorMotivo').style.display = 'none';
+        document.getElementById('modalAnular').style.display = 'flex';
+    }
+
+    function cerrarModalAnular() {
+        document.getElementById('modalAnular').style.display = 'none';
+    }
+
+    document.getElementById('modalAnular').addEventListener('click', function (e) {
+        if (e.target === this) cerrarModalAnular();
+    });
+
+    document.getElementById('formAnular').addEventListener('submit', function (e) {
+        const motivo = document.getElementById('motivoAnular').value.trim();
+        if (!motivo) {
+            e.preventDefault();
+            document.getElementById('errorMotivo').style.display = 'block';
+            return;
+        }
+        const btn = document.getElementById('btnAnular');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Anulando...';
+    });
+</script>
+</body>
+</html>
+
+

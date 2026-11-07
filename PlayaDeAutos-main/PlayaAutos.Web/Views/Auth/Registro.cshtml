@@ -1,0 +1,215 @@
+@model PlayaAutos.Web.Models.RegistroClienteViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Crear cuenta";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Crear cuenta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { margin: 0; }
+        .login-page { margin-bottom: 0 !important; }
+    </style>
+</head>
+<body>
+<div class="login-page">
+
+    <!-- Panel visual (izquierda, solo ≥lg) -->
+    <div class="login-side-visual">
+        <div class="lsv-circle c1"></div>
+        <div class="lsv-circle c2"></div>
+        <div class="lsv-dots">
+            <span></span><span></span><span></span>
+        </div>
+        <div>
+            <div class="lsv-logo-block" style="margin-bottom:1.1rem;">
+                <img src="~/images/logo.png" alt="A&J Autos Usados" class="lsv-logo-img-wrap" style="height:80px;width:auto;display:block;"
+                     onerror="this.style.display='none';this.closest('.lsv-logo-block').querySelector('.lsv-logo-text').style.display='block';" />
+                <div class="lsv-brand lsv-logo-text" style="display:none;">A<span>&J</span></div>
+            </div>
+            <p class="lsv-tagline">
+                Registrate y accedé a nuestro catálogo de vehículos.<br>
+                Solicitá turnos y seguí tus consultas fácilmente.
+            </p>
+            <div class="lsv-stat-preview">
+                <div class="lsp-title"><i class="fa-solid fa-car me-1"></i> ¿Por qué registrarte?</div>
+                <div class="lsv-stat-row">
+                    <div class="lsv-stat">
+                        <div class="sv"><i class="fa-solid fa-calendar-check" style="font-size:1.2rem;"></i></div>
+                        <div class="sl">Turnos online</div>
+                    </div>
+                    <div class="lsv-stat">
+                        <div class="sv"><i class="fa-solid fa-magnifying-glass" style="font-size:1.2rem;"></i></div>
+                        <div class="sl">Ver catálogo</div>
+                    </div>
+                    <div class="lsv-stat">
+                        <div class="sv"><i class="fa-solid fa-file-invoice" style="font-size:1.2rem;"></i></div>
+                        <div class="sl">Tus compras</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel formulario (derecha) -->
+    <div class="login-form-side">
+        <div class="login-box">
+
+            <!-- Logo -->
+            <div style="margin-bottom:1.5rem;">
+                <div class="login-logo-block" style="margin-bottom:0.9rem;">
+                    <img src="~/images/logo.png" alt="A&J Autos Usados" class="login-logo-img-wrap"
+                         style="height:80px;width:auto;display:block;"
+                         onerror="this.style.display='none';this.closest('.login-logo-block').querySelector('.login-logo-text').style.display='flex';" />
+                    <div class="login-logo-text" style="display:none;align-items:center;gap:0.5rem;">
+                        <div style="width:38px;height:38px;background:var(--pa-accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:white;font-size:1rem;font-weight:800;">A</div>
+                        <span style="font-size:1.55rem;font-weight:800;color:var(--pa-text);letter-spacing:-0.4px;">&amp;J <span style="color:var(--pa-accent);">Autos</span></span>
+                    </div>
+                </div>
+                <p class="login-tagline" style="margin:0;">Crear cuenta de cliente</p>
+            </div>
+
+            <!-- Error messages -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="pa-alert danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <span>@error.ErrorMessage</span>
+                    }
+                </div>
+            }
+
+            <!-- Form -->
+            <form asp-action="Registro" method="post" autocomplete="off">
+                <div class="form-group">
+                    <label class="pa-label" for="Nombre">
+                        <i class="fa-solid fa-user me-1" style="color:var(--pa-muted);font-size:0.8rem;"></i>
+                        Nombre completo
+                    </label>
+                    <div class="input-wrapper">
+                        <input asp-for="Nombre" id="Nombre" type="text"
+                               class="pa-input"
+                               placeholder="Ej: Juan Pérez"
+                               autocomplete="name" />
+                        <i class="fa-solid fa-user input-icon"></i>
+                    </div>
+                    <span asp-validation-for="Nombre" class="text-danger" style="font-size:0.8rem;"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="pa-label" for="Email">
+                        <i class="fa-solid fa-envelope me-1" style="color:var(--pa-muted);font-size:0.8rem;"></i>
+                        Correo electrónico
+                    </label>
+                    <div class="input-wrapper">
+                        <input asp-for="Email" id="Email" type="email"
+                               class="pa-input"
+                               placeholder="tucorreo@email.com"
+                               autocomplete="email" />
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger" style="font-size:0.8rem;"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="pa-label" for="Telefono">
+                        <i class="fa-solid fa-phone me-1" style="color:var(--pa-muted);font-size:0.8rem;"></i>
+                        Teléfono <span style="color:var(--pa-muted);font-weight:400;">(opcional)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input asp-for="Telefono" id="Telefono" type="tel"
+                               class="pa-input"
+                               placeholder="Ej: 0981 123 456"
+                               autocomplete="tel" />
+                        <i class="fa-solid fa-phone input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="pa-label" for="Password">
+                        <i class="fa-solid fa-lock me-1" style="color:var(--pa-muted);font-size:0.8rem;"></i>
+                        Contraseña
+                    </label>
+                    <div class="input-wrapper" style="position:relative;">
+                        <input asp-for="Password" id="Password" type="password"
+                               class="pa-input"
+                               placeholder="Mínimo 6 caracteres"
+                               autocomplete="new-password"
+                               style="padding-right:2.8rem !important;" />
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <button type="button" class="toggle-password" onclick="togglePass('Password','eyeIcon1')">
+                            <i class="fa-solid fa-eye" id="eyeIcon1"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger" style="font-size:0.8rem;"></span>
+                </div>
+
+                <div class="form-group" style="margin-bottom:1.75rem;">
+                    <label class="pa-label" for="ConfirmPassword">
+                        <i class="fa-solid fa-lock me-1" style="color:var(--pa-muted);font-size:0.8rem;"></i>
+                        Confirmar contraseña
+                    </label>
+                    <div class="input-wrapper" style="position:relative;">
+                        <input asp-for="ConfirmPassword" id="ConfirmPassword" type="password"
+                               class="pa-input"
+                               placeholder="Repetí tu contraseña"
+                               autocomplete="new-password"
+                               style="padding-right:2.8rem !important;" />
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <button type="button" class="toggle-password" onclick="togglePass('ConfirmPassword','eyeIcon2')">
+                            <i class="fa-solid fa-eye" id="eyeIcon2"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="text-danger" style="font-size:0.8rem;"></span>
+                </div>
+
+                <button type="submit" class="btn-pa-primary w-100 justify-content-center" style="padding:0.75rem;font-size:0.95rem;">
+                    <i class="fa-solid fa-user-plus"></i>
+                    Crear cuenta
+                </button>
+            </form>
+
+            <hr class="login-divider" />
+
+            <p style="text-align:center;font-size:0.875rem;color:var(--pa-muted);margin:0 0 0.75rem;">
+                ¿Ya tenés cuenta?
+                <a asp-controller="Auth" asp-action="Login"
+                   style="color:var(--pa-accent);font-weight:600;text-decoration:none;">
+                    Iniciá sesión
+                </a>
+            </p>
+
+            <p style="text-align:center;font-size:0.8rem;color:var(--pa-muted);margin:0;">
+                &copy; 2026 PlayaAutos. Todos los derechos reservados.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function togglePass(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon  = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+@model PlayaAutos.Web.Models.TasacionViewModel
+@using System.Text.Json
+@{
+    Layout = null;
+    ViewData["Title"] = "Nueva Tasación";
+    var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var modelosJson = Html.Raw(JsonSerializer.Serialize(Model.ModelosConMarca, jsonOpts));
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Nueva Tasación</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center gap-3">
+                <a href="/Tasaciones" class="action-btn" title="Volver">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h4><i class="fa-solid fa-car-burst me-2" style="color:var(--pa-accent);"></i>Nueva Tasación</h4>
+                    <p>Complete los datos del vehículo a tasar</p>
+                </div>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Corrija los errores antes de continuar.</strong>
+                </div>
+            }
+
+            <form asp-action="Crear" method="post" id="formCrear" novalidate>
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="MarcaVehiculo" id="hidMarcaVehiculo" />
+                <input type="hidden" asp-for="ModeloVehiculo" id="hidModeloVehiculo" />
+
+                <div class="row g-3">
+                    <div class="col-lg-8">
+
+                        <!-- Cliente -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-user me-1" style="color:var(--pa-accent);"></i>
+                                Cliente
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="ClienteId" class="pa-label">Cliente *</label>
+                                    <select asp-for="ClienteId" asp-items="Model.Clientes" class="pa-input">
+                                        <option value="">— Seleccione un cliente —</option>
+                                    </select>
+                                    <span asp-validation-for="ClienteId" class="val-msg"></span>
+                                </div>
+                                <!-- 🟢 Vehículo del catálogo -->
+                                <div class="col-md-6">
+                                    <label class="pa-label">
+                                        Vehículo del catálogo
+                                        <span style="font-size:0.72rem;color:var(--pa-muted);font-weight:400;">(opcional, para devoluciones)</span>
+                                    </label>
+                                    <select asp-for="VehiculoId" asp-items="Model.VehiculosCatalogo" class="pa-input" id="VehiculoId">
+                                        <option value="">— Sin vehículo (nuevo ingreso) —</option>
+                                    </select>
+                                    <small style="color:var(--pa-muted);font-size:0.73rem;">
+                                        <i class="fa-solid fa-circle-info me-1"></i>
+                                        Seleccione solo si es un vehículo que ya está en el sistema (devolución/intercambio).
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datos del vehículo -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-car me-1" style="color:var(--pa-accent);"></i>
+                                Datos del vehículo
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="pa-label">Marca *</label>
+                                    <select id="selectMarca" class="pa-input">
+                                        <option value="">— Seleccione marca —</option>
+                                    </select>
+                                    <span id="marcaValMsg" class="val-msg" style="display:none;">Seleccione una marca.</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="ModeloId" class="pa-label">Modelo *</label>
+                                    <select asp-for="ModeloId" id="selectModelo" class="pa-input">
+                                        <option value="">— Seleccione modelo —</option>
+                                    </select>
+                                    <span asp-validation-for="ModeloId" class="val-msg"></span>
+                                    <span asp-validation-for="MarcaVehiculo" class="val-msg"></span>
+                                    <span asp-validation-for="ModeloVehiculo" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="AnhoVehiculo" class="pa-label">Año *</label>
+                                    <input asp-for="AnhoVehiculo" type="number" class="pa-input" min="1900" max="2100" />
+                                    <span asp-validation-for="AnhoVehiculo" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="KilometrajeVehiculo" class="pa-label">Kilometraje *</label>
+                                    <input asp-for="KilometrajeVehiculo" type="number" class="pa-input" min="0" placeholder="0" />
+                                    <span asp-validation-for="KilometrajeVehiculo" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="ColorVehiculo" class="pa-label">Color</label>
+                                    <input asp-for="ColorVehiculo" class="pa-input" placeholder="Ej: Blanco" />
+                                    <span asp-validation-for="ColorVehiculo" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-12">
+                                    <label asp-for="EstadoGeneralVehiculo" class="pa-label">Estado general *</label>
+                                    <input asp-for="EstadoGeneralVehiculo" class="pa-input"
+                                           placeholder="Ej: Buen estado, leve abolladura en puerta..." />
+                                    <span asp-validation-for="EstadoGeneralVehiculo" class="val-msg"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Datos de inventario -->
+                        <div class="pa-card p-4 mb-3">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-warehouse me-1" style="color:var(--pa-accent);"></i>
+                                Datos de inventario
+                                <span style="font-size:0.75rem;font-weight:400;color:var(--pa-muted);margin-left:.5rem;">(se usarán al registrar la venta)</span>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label asp-for="TipoId" class="pa-label">Tipo de vehículo</label>
+                                    <select asp-for="TipoId" asp-items="Model.Tipos" class="pa-input" id="TipoId">
+                                        <option value="">— Seleccione tipo —</option>
+                                    </select>
+                                    <span asp-validation-for="TipoId" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="CondicionId" class="pa-label">Condición</label>
+                                    <select asp-for="CondicionId" asp-items="Model.Condiciones" class="pa-input" id="CondicionId">
+                                        <option value="">— Seleccione condición —</option>
+                                    </select>
+                                    <span asp-validation-for="CondicionId" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="OrigenId" class="pa-label">Origen</label>
+                                    <select asp-for="OrigenId" asp-items="Model.Origenes" class="pa-input" id="OrigenId">
+                                        <option value="">— Seleccione origen —</option>
+                                    </select>
+                                    <span asp-validation-for="OrigenId" class="val-msg"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Valorización -->
+                        <div class="pa-card p-4">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-tags me-1" style="color:var(--pa-accent);"></i>
+                                Valorización
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="ValorTasacion" class="pa-label">Valor de tasación (Gs.) *</label>
+                                    <div class="input-wrapper">
+                                        <input asp-for="ValorTasacion" type="number" class="pa-input" min="1" placeholder="0"
+                                               style="padding-left:2.8rem !important;" />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <small style="color:var(--pa-muted);font-size:0.75rem;">Monto que se pagaría al cliente por su vehículo</small>
+                                    <span asp-validation-for="ValorTasacion" class="val-msg"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="PrecioVenta" class="pa-label">Precio de venta (Gs.) *</label>
+                                    <div class="input-wrapper">
+                                        <input asp-for="PrecioVenta" type="number" class="pa-input" min="1" placeholder="0"
+                                               style="padding-left:2.8rem !important;" />
+                                        <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                    </div>
+                                    <small style="color:var(--pa-muted);font-size:0.75rem;">Precio al que se vendería el vehículo tasado</small>
+                                    <span asp-validation-for="PrecioVenta" class="val-msg"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Panel derecho -->
+                    <div class="col-lg-4">
+                        <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                            <div class="section-title mb-3">
+                                <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-accent);"></i>
+                                Información
+                            </div>
+                            <div style="font-size:0.83rem;color:var(--pa-muted);line-height:1.7;">
+                                <p><i class="fa-solid fa-clock me-2" style="color:#ca8a04;"></i>La tasación quedará en estado <strong style="color:var(--pa-text);">Pendiente</strong> hasta ser revisada y aprobada.</p>
+                                <p><i class="fa-solid fa-check-circle me-2" style="color:#22c55e;"></i>Al <strong style="color:var(--pa-text);">aprobar</strong>, la tasación queda lista para usarse como permuta en una venta.</p>
+                                <p><i class="fa-solid fa-right-left me-2" style="color:var(--pa-accent);"></i>Las tasaciones <strong style="color:var(--pa-text);">aprobadas</strong> se muestran en ventas para el cliente correspondiente.</p>
+                                <p style="margin:0;"><i class="fa-solid fa-car me-2" style="color:#818cf8;"></i>El vehículo se registra en el inventario <strong style="color:var(--pa-text);">al confirmar la venta</strong>, usando los datos de inventario aquí ingresados.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                    <a href="/Tasaciones" class="btn-pa-ghost"><i class="fa-solid fa-xmark"></i> Cancelar</a>
+                    <button type="submit" class="btn-pa-primary" id="btnGuardar"><i class="fa-solid fa-floppy-disk"></i> Registrar tasación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+            .val-msg {
+                font-size: 0.78rem;
+                color: #f87171;
+                margin-top: 3px;
+                display: block;
+            }
+
+            .action-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                color: var(--pa-muted);
+                text-decoration: none;
+                transition: background var(--ease);
+            }
+
+                .action-btn:hover {
+                    background: rgba(255,255,255,0.06);
+                    color: var(--pa-text);
+                }
+    </style>
+
+    <script>
+            const allModelos = @modelosJson;
+
+            var tiposData = @Html.Raw(JsonSerializer.Serialize(Model.Tipos.Select(t => new { id = t.Value, nombre = t.Text }), jsonOpts));
+            var condicionesData = @Html.Raw(JsonSerializer.Serialize(Model.Condiciones.Select(c => new { id = c.Value, nombre = c.Text }), jsonOpts));
+            var origenesData = @Html.Raw(JsonSerializer.Serialize(Model.Origenes.Select(o => new { id = o.Value, nombre = o.Text }), jsonOpts));
+
+            if (!tiposData || tiposData.length === 0) {
+                tiposData = [{id:"1",nombre:"Sedán"},{id:"2",nombre:"SUV"},{id:"3",nombre:"Pickup"},{id:"4",nombre:"Hatchback"},{id:"5",nombre:"Minivan"},{id:"6",nombre:"Station Wagon"}];
+            }
+            if (!condicionesData || condicionesData.length === 0) {
+                condicionesData = [{id:"1",nombre:"Impecable"},{id:"2",nombre:"Muy bueno"},{id:"3",nombre:"Bueno"},{id:"4",nombre:"Regular"},{id:"5",nombre:"Para restaurar"}];
+            }
+            if (!origenesData || origenesData.length === 0) {
+                origenesData = [{id:"1",nombre:"Propio"},{id:"2",nombre:"Consigna"}];
+            }
+
+            const selectMarca  = document.getElementById('selectMarca');
+            const selectModelo = document.getElementById('selectModelo');
+            const hidMarca     = document.getElementById('hidMarcaVehiculo');
+            const hidModelo    = document.getElementById('hidModeloVehiculo');
+
+            if (!allModelos || allModelos.length === 0) {
+                selectMarca.innerHTML = '<option value="">— No hay marcas —</option>';
+                selectModelo.innerHTML = '<option value="">— No hay modelos —</option>';
+            } else {
+                const marcas = [...new Set(allModelos.map(m => m.nombreMarca).filter(Boolean))].sort();
+                marcas.forEach(nombre => { const opt = document.createElement('option'); opt.value = nombre; opt.textContent = nombre; selectMarca.appendChild(opt); });
+            }
+
+            function buildModeloOptions(marcaFiltro) {
+                const current = selectModelo.value;
+                selectModelo.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+                const filtrados = marcaFiltro ? allModelos.filter(m => m.nombreMarca === marcaFiltro) : allModelos;
+                filtrados.forEach(m => { const opt = document.createElement('option'); opt.value = m.modeloId; opt.dataset.marca = m.nombreMarca; opt.dataset.nombre = m.nombreModelo; opt.textContent = m.nombreModelo; selectModelo.appendChild(opt); });
+                if (current && selectModelo.querySelector('option[value="' + current + '"]')) { selectModelo.value = current; }
+                syncHiddenFields();
+            }
+
+            function syncHiddenFields() { const opt = selectModelo.selectedOptions[0]; hidMarca.value = (opt && opt.dataset.marca) || ''; hidModelo.value = (opt && opt.dataset.nombre) || ''; }
+
+            selectMarca.addEventListener('change', () => buildModeloOptions(selectMarca.value));
+            selectModelo.addEventListener('change', () => { syncHiddenFields(); const opt = selectModelo.selectedOptions[0]; if (opt && opt.dataset.marca && !selectMarca.value) selectMarca.value = opt.dataset.marca; });
+
+            function llenarSelect(id, data) {
+                const sel = document.getElementById(id); if (!sel) return;
+                sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+                data.forEach(item => { const opt = document.createElement('option'); opt.value = item.id; opt.textContent = item.nombre; sel.appendChild(opt); });
+            }
+
+            llenarSelect('TipoId', tiposData);
+            llenarSelect('CondicionId', condicionesData);
+            llenarSelect('OrigenId', origenesData);
+
+            // ============ AUTO-RELLENAR DESDE CATÁLOGO ============
+            document.getElementById('VehiculoId').addEventListener('change', async function() {
+                const vehiculoId = this.value;
+                if (!vehiculoId) return;
+                try {
+                    const resp = await fetch('/Tasaciones/GetVehiculo/' + vehiculoId);
+                    if (!resp.ok) return;
+                    const v = await resp.json();
+                    const marcaNombre = v.marca;
+                    const modeloId = v.modeloId;
+                    if (marcaNombre) { selectMarca.value = marcaNombre; buildModeloOptions(marcaNombre); }
+                    if (modeloId) { selectModelo.value = modeloId; syncHiddenFields(); }
+                    document.getElementById('AnhoVehiculo').value = v.anio || '';
+                    document.getElementById('KilometrajeVehiculo').value = v.kilometraje || '';
+                    document.getElementById('ColorVehiculo').value = v.color || '';
+                    document.getElementById('EstadoGeneralVehiculo').value = v.descripcion || '';
+                    if (v.precioVenta) { document.getElementById('PrecioVenta').value = v.precioVenta; }
+                    // 🟢 Asignar después de que el select esté lleno
+                    setTimeout(() => {
+                        if (v.tipoId) document.getElementById('TipoId').value = v.tipoId;
+                        if (v.condicionId) document.getElementById('CondicionId').value = v.condicionId;
+                        if (v.origenId) document.getElementById('OrigenId').value = v.origenId;
+                    }, 100);
+                } catch (err) { console.log('No se pudo cargar datos del vehículo:', err); }
+            });
+
+            buildModeloOptions('');
+
+            document.getElementById('formCrear').addEventListener('submit', () => {
+                document.getElementById('btnGuardar').disabled = true;
+                document.getElementById('btnGuardar').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+            });
+    </script>
+</body>
+</html>

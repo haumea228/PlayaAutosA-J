@@ -1,0 +1,291 @@
+@model PlayaAutos.Web.Models.ClienteViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Editar Cliente";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Editar Cliente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Header -->
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Clientes" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-user-pen me-2" style="color:var(--pa-accent);"></i>Editar Cliente</h4>
+                <p>Modifique los campos que desea actualizar</p>
+            </div>
+        </div>
+
+        @if (TempData["Exito"] != null)
+        {
+            <div class="pa-alert success mb-3">
+                <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+            </div>
+        }
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+            </div>
+        }
+
+        <!--
+            IMPORTANTE: NO anidar forms. El formEditar cubre solo la col izquierda.
+            El checkbox Activo y el botón Guardar están fuera del <form> pero asociados
+            via el atributo HTML form="formEditar".
+            El form de ConvertirConsignante es un hermano independiente.
+        -->
+
+        <!-- form vacío solo para el antiforgery y los hidden -->
+        <form id="formEditar"
+              asp-action="Editar" asp-route-id="@Model.ClienteId"
+              method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ClienteId" />
+            <input type="hidden" asp-for="EsConsignante" />
+            <input type="hidden" asp-for="ConsignanteId" />
+            <input type="hidden" asp-for="PorcentajeComisionDefault" />
+        </form>
+
+        <div class="row g-3">
+
+            <!-- ── Columna izquierda: campos del cliente ── -->
+            <div class="col-lg-8">
+
+                <!-- Información del Cliente -->
+                <div class="pa-card p-4 mb-3">
+                    <div class="section-title mb-3">
+                        <i class="fa-solid fa-id-card me-1" style="color:var(--pa-accent);"></i>
+                        Información del Cliente
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Nombre" class="pa-label">Nombre Completo *</label>
+                            <input form="formEditar" asp-for="Nombre" class="pa-input" autofocus />
+                            <span asp-validation-for="Nombre" class="val-msg"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CI_RUC" class="pa-label">CI / RUC *</label>
+                            <input form="formEditar" asp-for="CI_RUC" class="pa-input" />
+                            <span asp-validation-for="CI_RUC" class="val-msg"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de Contacto -->
+                <div class="pa-card p-4 mb-3">
+                    <div class="section-title mb-3">
+                        <i class="fa-solid fa-address-book me-1" style="color:var(--pa-accent);"></i>
+                        Información de Contacto
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Telefono" class="pa-label">Teléfono</label>
+                            <input form="formEditar" asp-for="Telefono" class="pa-input" />
+                            <span asp-validation-for="Telefono" class="val-msg"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="pa-label">Email</label>
+                            <input form="formEditar" asp-for="Email" class="pa-input" type="email" />
+                            <span asp-validation-for="Email" class="val-msg"></span>
+                        </div>
+                        <div class="col-md-12">
+                            <label asp-for="Direccion" class="pa-label">Dirección</label>
+                            <input form="formEditar" asp-for="Direccion" class="pa-input" />
+                            <span asp-validation-for="Direccion" class="val-msg"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rango de Precios de Interés -->
+                <div class="pa-card p-4">
+                    <div class="section-title mb-3">
+                        <i class="fa-solid fa-dollar-sign me-1" style="color:var(--pa-accent);"></i>
+                        Rango de Precios de Interés
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="RangoPrecioMin" class="pa-label">Precio Mínimo (Gs.)</label>
+                            <div class="input-wrapper">
+                                <input form="formEditar" asp-for="RangoPrecioMin" type="number" class="pa-input"
+                                       placeholder="0" min="0" style="padding-left:2.8rem !important;" />
+                                <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                            </div>
+                            <span asp-validation-for="RangoPrecioMin" class="val-msg"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RangoPrecioMax" class="pa-label">Precio Máximo (Gs.)</label>
+                            <div class="input-wrapper">
+                                <input form="formEditar" asp-for="RangoPrecioMax" type="number" class="pa-input"
+                                       placeholder="0" min="0" style="padding-left:2.8rem !important;" />
+                                <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                            </div>
+                            <span asp-validation-for="RangoPrecioMax" class="val-msg"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Columna derecha: estado + consignante ── -->
+            <div class="col-lg-4">
+                <div style="display:flex;flex-direction:column;gap:1rem;position:sticky;top:1rem;">
+
+                    <!-- Estado del cliente — el checkbox Activo usa form="formEditar" -->
+                    <div class="pa-card p-4">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-toggle-on me-1" style="color:var(--pa-accent);"></i>
+                            Estado del Cliente
+                        </div>
+
+                        <div class="form-check form-switch mb-3">
+                            <input form="formEditar"
+                                   asp-for="Activo" class="form-check-input" type="checkbox" role="switch"
+                                   id="chkActivo" style="cursor:pointer;width:3em;height:1.5em;" />
+                            <label class="form-check-label" for="chkActivo" style="cursor:pointer;font-weight:600;">
+                                <span id="estadoTexto">@(Model.Activo ? "Cliente Activo" : "Cliente Inactivo")</span>
+                            </label>
+                        </div>
+
+                        <hr style="border-color:var(--pa-border);" />
+
+                        <div style="font-size:0.85rem;color:var(--pa-muted);">
+                            <p><i class="fa-solid fa-circle-info me-2" style="color:var(--pa-info);"></i>
+                               ID del cliente: <strong>@Model.ClienteId</strong></p>
+                            <p><i class="fa-solid fa-triangle-exclamation me-2" style="color:var(--pa-warning);"></i>
+                               Los clientes inactivos no aparecerán en búsquedas.</p>
+                        </div>
+                    </div>
+
+                    <!-- Consignante -->
+                    @if (Model.EsConsignante)
+                    {
+                        <div class="pa-card p-4" style="border:1.5px solid #22c55e;">
+                            <div class="section-title mb-3" style="color:#22c55e;">
+                                <i class="fa-solid fa-file-contract me-1"></i>
+                                Consignante
+                            </div>
+                            <div style="display:inline-flex;align-items:center;gap:0.5rem;
+                                        background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);
+                                        border-radius:8px;padding:0.4rem 0.85rem;margin-bottom:1rem;">
+                                <i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:0.85rem;"></i>
+                                <span style="font-weight:700;font-size:0.88rem;color:#22c55e;">Habilitado como Consignante</span>
+                            </div>
+                            <div style="font-size:0.85rem;color:var(--pa-muted);display:flex;flex-direction:column;gap:0.5rem;">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span>ID Consignante</span>
+                                    <strong style="color:var(--pa-text);">#@Model.ConsignanteId</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span>Comisión por defecto</span>
+                                    <strong style="color:var(--pa-accent);">@Model.PorcentajeComisionDefault?.ToString("N1")%</strong>
+                                </div>
+                            </div>
+                            <hr style="border-color:var(--pa-border);margin:0.85rem 0;" />
+                            <a href="/Consignas" style="font-size:0.83rem;color:var(--pa-accent);text-decoration:none;font-weight:600;">
+                                <i class="fa-solid fa-arrow-right me-1"></i> Ver consignas
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- form independiente — NO anidado en formEditar -->
+                        <form id="formConsignante"
+                              asp-action="ConvertirConsignante" asp-route-id="@Model.ClienteId"
+                              method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="pa-card p-4" style="border:1.5px solid var(--pa-border);">
+                                <div class="section-title mb-2">
+                                    <i class="fa-solid fa-file-contract me-1" style="color:var(--pa-accent);"></i>
+                                    Consignante
+                                </div>
+                                <p style="font-size:0.82rem;color:var(--pa-muted);margin-bottom:1rem;">
+                                    Habilitá a este cliente para dejar vehículos en consignación.
+                                </p>
+                                <div style="margin-bottom:0.85rem;">
+                                    <label class="pa-label" style="font-size:0.82rem;">Comisión por defecto (%)</label>
+                                    <input type="number" name="porcentajeComisionDefault"
+                                           class="pa-input" step="0.1" min="0.1" max="100"
+                                           placeholder="Ej: 10.0" required
+                                           style="font-size:0.88rem;" />
+                                    <span style="font-size:0.75rem;color:var(--pa-muted);margin-top:3px;display:block;">
+                                        Porcentaje que percibe la playa en cada consigna.
+                                    </span>
+                                </div>
+                                <button type="submit" form="formConsignante"
+                                        class="btn-pa-primary" style="width:100%;font-size:0.85rem;"
+                                        id="btnConvertir"
+                                        onclick="return confirm('¿Habilitar a @Html.Raw(Model.Nombre.Replace("'", "\\'")) como consignante?')">
+                                    <i class="fa-solid fa-user-check me-1"></i> Habilitar como Consignante
+                                </button>
+                            </div>
+                        </form>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones — asociados a formEditar via form= -->
+        <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+            <a href="/Clientes" class="btn-pa-ghost">
+                <i class="fa-solid fa-xmark"></i> Cancelar
+            </a>
+            <button form="formEditar" type="submit" class="btn-pa-primary" id="btnGuardar">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar cambios
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .val-msg { font-size: 0.78rem; color: #f87191; margin-top: 3px; display: block; }
+    .action-btn {
+        width: 34px; height: 34px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border); background: transparent;
+        color: var(--pa-muted); text-decoration: none; transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+    .form-check-input:checked { background-color: #22c55e; border-color: #22c55e; }
+</style>
+
+<script>
+    document.getElementById('chkActivo').addEventListener('change', function () {
+        document.getElementById('estadoTexto').textContent =
+            this.checked ? 'Cliente Activo' : 'Cliente Inactivo';
+    });
+
+    document.getElementById('formEditar').addEventListener('submit', function () {
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    });
+</script>
+</body>
+</html>

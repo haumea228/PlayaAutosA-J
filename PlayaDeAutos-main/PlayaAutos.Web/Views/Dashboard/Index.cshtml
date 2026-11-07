@@ -1,0 +1,205 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Dashboard";
+    var actividades = ViewBag.UltimasActividades as List<PlayaAutos.Web.Controllers.ActividadDashboard> ?? new();
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Page header -->
+        <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <h4>Bienvenido, @ViewBag.Nombre</h4>
+                <p>Aquí tienes un resumen del estado actual de tu concesionario.</p>
+            </div>
+            <div style="font-size:0.8rem;color:var(--pa-muted);">
+                <i class="fa-regular fa-clock me-1"></i>
+                <span id="currentDate"></span>
+            </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card s-warning">
+                    <div class="stat-icon"><i class="fa-solid fa-car"></i></div>
+                    <div class="stat-value text-pa-warning">@ViewBag.VehiculosDisponibles</div>
+                    <div class="stat-label">Vehículos disponibles</div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card s-info">
+                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                    <div class="stat-value text-pa-info">@ViewBag.ClientesRegistrados</div>
+                    <div class="stat-label">Clientes registrados</div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card s-success">
+                    <div class="stat-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <div class="stat-value text-pa-success">@ViewBag.VentasDelMes</div>
+                    <div class="stat-label">Ventas del mes</div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card s-danger">
+                    <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="stat-value text-pa-accent">@ViewBag.CitasPendientes</div>
+                    <div class="stat-label">Citas pendientes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick actions + recent activity -->
+        <div class="row g-3">
+            <!-- Quick actions -->
+            <div class="col-lg-5">
+                <div class="pa-card p-3 h-100">
+                    <div class="section-title">
+                        <i class="fa-solid fa-bolt me-1" style="color:var(--pa-accent);"></i>
+                        Acciones rápidas
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="/Vehiculos/Crear" class="quick-action-btn">
+                            <div style="width:36px;height:36px;background:rgba(245,158,11,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--pa-warning);font-size:0.9rem;">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:0.88rem;font-weight:600;color:var(--pa-text);">Agregar vehículo</div>
+                                <div style="font-size:0.75rem;color:var(--pa-muted);">Registrar nuevo auto al inventario</div>
+                            </div>
+                        </a>
+                        <a href="/Clientes/Crear" class="quick-action-btn">
+                            <div style="width:36px;height:36px;background:rgba(59,130,246,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--pa-info);font-size:0.9rem;">
+                                <i class="fa-solid fa-user-plus"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:0.88rem;font-weight:600;color:var(--pa-text);">Nuevo cliente</div>
+                                <div style="font-size:0.75rem;color:var(--pa-muted);">Registrar cliente en el sistema</div>
+                            </div>
+                        </a>
+                        <a href="/Ventas/Crear" class="quick-action-btn">
+                            <div style="width:36px;height:36px;background:rgba(16,185,129,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--pa-success);font-size:0.9rem;">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:0.88rem;font-weight:600;color:var(--pa-text);">Registrar venta</div>
+                                <div style="font-size:0.75rem;color:var(--pa-muted);">Crear nueva operación de venta</div>
+                            </div>
+                        </a>
+                        <a href="/Citas/Crear" class="quick-action-btn">
+                            <div style="width:36px;height:36px;background:rgba(233,69,96,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--pa-accent);font-size:0.9rem;">
+                                <i class="fa-solid fa-calendar-plus"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:0.88rem;font-weight:600;color:var(--pa-text);">Agendar cita</div>
+                                <div style="font-size:0.75rem;color:var(--pa-muted);">Crear nueva cita con cliente</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent activity -->
+            <div class="col-lg-7">
+                <div class="pa-card p-3 h-100">
+                    <div class="section-title">
+                        <i class="fa-solid fa-clock-rotate-left me-1" style="color:var(--pa-accent);"></i>
+                        Actividad reciente
+                    </div>
+                    @if (actividades.Any())
+                    {
+                        <div class="d-flex flex-column gap-1" style="max-height:300px;overflow-y:auto;">
+                            @foreach (var act in actividades)
+                            {
+                                var fechaParse = DateTime.TryParse(act.Fecha, out var f);
+                                <div class="actividad-item">
+                                    <div style="width:32px;height:32px;background:rgba(255,255,255,0.05);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        <i class="fa-solid @act.Icono" style="color:@act.Color;font-size:0.75rem;"></i>
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div style="font-size:0.85rem;font-weight:500;color:var(--pa-text);">@act.Descripcion</div>
+                                        <div style="font-size:0.75rem;color:var(--pa-muted);">
+                                            @(fechaParse ? f.ToString("dd/MM/yyyy") : act.Fecha)
+                                            @if (act.Monto > 0)
+                                            {
+                                                <span> · Gs. @act.Monto.ToString("N0")</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="empty-state" style="text-align:center;padding:2.5rem 1rem;">
+                            <i class="fa-regular fa-folder-open" style="font-size:2.5rem;color:var(--pa-border);display:block;margin-bottom:0.75rem;"></i>
+                            <p style="color:var(--pa-muted);font-size:0.87rem;margin:0;">
+                                No hay actividad reciente registrada.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    (function () {
+        const el = document.getElementById('currentDate');
+        if (el) {
+            el.textContent = new Date().toLocaleDateString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+        }
+    })();
+</script>
+
+<style>
+    .quick-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 9px;
+        text-decoration: none;
+        transition: background var(--ease);
+    }
+    .quick-action-btn:hover { background: rgba(255,255,255,0.04); }
+    .actividad-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--pa-border);
+    }
+    .actividad-item:last-child {
+        border-bottom: none;
+    }
+</style>
+</body>
+</html>

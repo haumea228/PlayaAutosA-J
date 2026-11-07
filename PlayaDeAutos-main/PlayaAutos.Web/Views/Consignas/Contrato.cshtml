@@ -1,0 +1,395 @@
+@model PlayaAutos.Web.Models.ConsignaContratoViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = $"Contrato {Model.NumeroContrato}";
+    var duracion = (Model.FechaFin - Model.FechaInicio).Days;
+    var ganancia = Model.PrecioVentaPlaya - Model.PrecioVentaCliente;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contrato @Model.NumeroContrato — PlayaAutos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        :root {
+            --accent: #4f46e5;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Toolbar (oculto al imprimir) ─────────────────────────── */
+        .toolbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .toolbar-title { font-weight: 700; font-size: 0.95rem; flex: 1; }
+        .toolbar-badge {
+            font-size: 0.75rem; padding: 0.2rem 0.65rem; border-radius: 99px; font-weight: 600;
+        }
+        .badge-vigente { background: rgba(34,197,94,0.1); color: #16a34a; }
+        .badge-anulado { background: rgba(239,68,68,0.1); color: #dc2626; }
+        .badge-vencido { background: rgba(100,116,139,0.1); color: #475569; }
+        .btn-print {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: var(--accent); color: white;
+            border: none; border-radius: 8px; padding: 0.55rem 1.25rem;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; text-decoration: none;
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: #f1f5f9; color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1.1rem;
+            font-size: 0.88rem; font-weight: 600; cursor: pointer; text-decoration: none;
+        }
+
+        /* ── Contenedor de la hoja ─────────────────────────────────── */
+        .page-wrap { padding: 2rem; display: flex; justify-content: center; }
+        .sheet {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 18mm 18mm 22mm;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* ── Header del contrato ──────────────────────────────────── */
+        .ct-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--text);
+        }
+        .ct-logo-area {
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+        .ct-logo-box {
+            width: 52px; height: 52px;
+            border: 2px solid var(--text); border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 1.1rem; letter-spacing: -1px;
+        }
+        .ct-company { font-size: 0.75rem; font-weight: 700; line-height: 1.4; text-transform: uppercase; }
+        .ct-date-box {
+            border: 1.5px solid var(--text);
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 160px;
+            text-align: center;
+        }
+        .ct-date-box span { font-family: monospace; }
+
+        /* ── Título ───────────────────────────────────────────────── */
+        .ct-title {
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #1e40af;
+            margin: 1.2rem 0 1rem;
+            line-height: 1.35;
+        }
+
+        .ct-numero {
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── Cuerpo del contrato ──────────────────────────────────── */
+        .ct-body { font-size: 0.82rem; line-height: 1.65; text-align: justify; }
+        .ct-intro { margin-bottom: 1rem; }
+
+        .ct-clausula { margin-bottom: 0.9rem; }
+        .ct-clausula-titulo {
+            font-weight: 800; text-transform: uppercase;
+            font-size: 0.82rem;
+            display: inline;
+        }
+
+        /* ── Tabla vehículo ───────────────────────────────────────── */
+        .ct-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0 1rem;
+            font-size: 0.78rem;
+        }
+        .ct-table th, .ct-table td {
+            border: 1px solid #94a3b8;
+            padding: 0.35rem 0.5rem;
+            vertical-align: middle;
+        }
+        .ct-table th {
+            background: #e2e8f0;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+        }
+        .ct-table td { min-height: 22px; }
+        .ct-table .val { font-weight: 600; color: var(--text); }
+        .ct-table .blank { color: transparent; user-select: none; }
+
+        /* ── Línea de firma ───────────────────────────────────────── */
+        .ct-firmas {
+            margin-top: 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .ct-firma { text-align: center; font-size: 0.8rem; }
+        .ct-firma-box {
+            width: 80px; height: 80px;
+            border: 1.5px solid var(--border);
+            margin: 0 auto 0.5rem;
+        }
+        .ct-firma-linea {
+            border-top: 1.5px solid var(--text);
+            margin: 0.85rem 0 0.35rem;
+            padding-top: 0.35rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+        }
+        .ct-firma-cc { color: var(--muted); margin-top: 0.3rem; }
+
+        /* ── Print ────────────────────────────────────────────────── */
+        @@media print {
+            body { background: white; }
+            .toolbar { display: none !important; }
+            .page-wrap { padding: 0; }
+            .sheet {
+                box-shadow: none; border-radius: 0;
+                width: 100%; min-height: auto;
+                padding: 12mm 15mm 18mm;
+            }
+            @@page { margin: 0; size: A4; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toolbar (no se imprime) -->
+<div class="toolbar">
+    <a href="/Consignas" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Consignas
+    </a>
+    <div class="toolbar-title">
+        Contrato <strong>@Model.NumeroContrato</strong>
+        &nbsp;—&nbsp; @Model.ConsignanteNombre &nbsp;—&nbsp; @Model.VehiculoMarca @Model.VehiculoModelo @Model.VehiculoAnio
+    </div>
+    <span class="toolbar-badge badge-@Model.Estado.ToLower()">@Model.Estado</span>
+    <button class="btn-print" onclick="window.print()">
+        <i class="fa-solid fa-file-pdf"></i> Imprimir / Descargar PDF
+    </button>
+</div>
+
+<!-- Hoja A4 -->
+<div class="page-wrap">
+<div class="sheet">
+
+    <!-- Encabezado -->
+    <div class="ct-header">
+        <div class="ct-logo-area">
+            <div class="ct-logo-box">A&J</div>
+            <div class="ct-company">
+                A&amp;J Autos Usados<br>
+                PlayaAutos S.A.<br>
+                <span style="font-weight:400;font-size:0.7rem;">Asunción, Paraguay</span>
+            </div>
+        </div>
+        <div>
+            <div class="ct-date-box">
+                FECHA: <span>@Model.FechaInicio.ToString("dd / MM / yyyy")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Título -->
+    <div class="ct-title">
+        Contrato de Consignación Automotriz<br>para Compraventa
+    </div>
+    <div class="ct-numero">Nº @Model.NumeroContrato</div>
+
+    <!-- Cuerpo -->
+    <div class="ct-body">
+
+        <!-- Introducción -->
+        <div class="ct-intro">
+            En la ciudad de <strong>Asunción</strong>, en la empresa <strong>A&amp;J AUTOS USADOS — PlayaAutos S.A.</strong>,
+            denominada la <strong>CONSIGNATARIA</strong>, y el/la señor/a
+            <strong>@Model.ConsignanteNombre</strong>
+            @if (!string.IsNullOrEmpty(Model.ConsignanteCI))
+            {
+                <text>identificado/a con cédula / RUC número <strong>@Model.ConsignanteCI</strong></text>
+            },
+            denominado/a el/la <strong>CONSIGNANTE</strong>, se conviene a presentar el contrato de
+            consignación, sujeto a las cláusulas y condiciones siguientes.
+        </div>
+
+        <!-- PRIMERA: Vehículo -->
+        <div class="ct-clausula">
+            <span class="ct-clausula-titulo">Primera.</span>
+            El CONSIGNANTE deja en consignación para vender, el automóvil de su propiedad con la siguiente información:
+
+            <table class="ct-table">
+                <tr>
+                    <th style="width:28%;">Marca</th>
+                    <th style="width:32%;">Modelo / Línea</th>
+                    <th style="width:20%;">Año</th>
+                    <th style="width:20%;">Tipo</th>
+                </tr>
+                <tr>
+                    <td class="val">@Model.VehiculoMarca</td>
+                    <td class="val">@Model.VehiculoModelo</td>
+                    <td class="val">@Model.VehiculoAnio</td>
+                    <td class="val">@(Model.VehiculoTipo ?? "—")</td>
+                </tr>
+                @if (!string.IsNullOrEmpty(Model.VehiculoColor) || Model.VehiculoKilometraje.HasValue)
+                {
+                    <tr>
+                        @if (!string.IsNullOrEmpty(Model.VehiculoColor) && Model.VehiculoKilometraje.HasValue)
+                        {
+                            <th colspan="2">Color</th>
+                            <th colspan="2">Kilometraje</th>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.VehiculoColor))
+                        {
+                            <th colspan="4">Color</th>
+                        }
+                        else
+                        {
+                            <th colspan="4">Kilometraje</th>
+                        }
+                    </tr>
+                    <tr>
+                        @if (!string.IsNullOrEmpty(Model.VehiculoColor) && Model.VehiculoKilometraje.HasValue)
+                        {
+                            <td class="val" colspan="2">@Model.VehiculoColor</td>
+                            <td class="val" colspan="2">@Model.VehiculoKilometraje.Value.ToString("N0") km</td>
+                        }
+                        else if (!string.IsNullOrEmpty(Model.VehiculoColor))
+                        {
+                            <td class="val" colspan="4">@Model.VehiculoColor</td>
+                        }
+                        else
+                        {
+                            <td class="val" colspan="4">@Model.VehiculoKilometraje!.Value.ToString("N0") km</td>
+                        }
+                    </tr>
+                }
+            </table>
+
+            Con los accesorios y condición que se detallan al momento de la entrega del vehículo.
+        </div>
+
+        <!-- SEGUNDA: Precio -->
+                <!-- SEGUNDA: Precio - CORREGIDO -->
+                <!-- SEGUNDA: Precio -->
+                <div class="ct-clausula">
+                    <span class="ct-clausula-titulo">Segunda.</span>
+                    El CONSIGNANTE recibirá <strong>Gs. @Model.PrecioVentaCliente.ToString("N0")</strong>
+                    (@Model.PrecioVentaCliente.ToString("N0") guaraníes) por la venta de su vehículo
+                    al concretarse la operación. La CONSIGNATARIA podrá venderlo al precio que estime conveniente,
+                    siendo cualquier diferencia a su favor. Además, percibirá una comisión del
+                    <strong>@Model.PorcentajeComision.ToString("N1")%</strong>
+                    sobre el precio base por sus servicios de intermediación.
+                </div>
+
+        <!-- TERCERA: Plazo -->
+        <div class="ct-clausula">
+            <span class="ct-clausula-titulo">Tercera.</span>
+            El plazo del presente contrato se conviene en <strong>@duracion días</strong>, a partir de la fecha
+            <strong>@Model.FechaInicio.ToString("dd/MM/yyyy")</strong>,
+            cuyo vencimiento opera el día <strong>@Model.FechaFin.ToString("dd/MM/yyyy")</strong>,
+            a cuyo vencimiento, la CONSIGNATARIA retirará la unidad o procederá según acuerdo entre las partes.
+        </div>
+
+        <!-- CUARTA -->
+        <div class="ct-clausula">
+            <span class="ct-clausula-titulo">Cuarta.</span>
+            El vehículo permanecerá durante la vigencia del presente contrato depositado en el local de
+            <strong>A&amp;J Autos Usados — PlayaAutos S.A.</strong>, quedando prohibido su uso por parte del
+            CONSIGNANTE o cualquier otra persona, salvo en el caso de demostración de funcionamiento, debiendo
+            ser conducido por la CONSIGNATARIA o por otra persona autorizada.
+        </div>
+
+        <!-- QUINTA -->
+        <div class="ct-clausula">
+            <span class="ct-clausula-titulo">Quinta.</span>
+            La CONSIGNATARIA se responsabiliza de todos los daños que pudiera ocasionar a la unidad o a terceros
+            durante toda la vigencia del presente contrato, y hasta la devolución del vehículo a satisfacción del propietario.
+        </div>
+
+        <!-- SEXTA -->
+        <div class="ct-clausula">
+            <span class="ct-clausula-titulo">Sexta.</span>
+            El CONSIGNANTE manifiesta que el vehículo no registra gravamen de ninguna especie, ni deudas impositivas,
+            o en concepto de multas, responsabilizándose por evicción y vicios redhibitorios.
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Clausulas))
+        {
+            <div class="ct-clausula">
+                <span class="ct-clausula-titulo">Cláusulas adicionales.</span>
+                @Model.Clausulas
+            </div>
+        }
+
+        <p style="margin:1.25rem 0 0.25rem;font-size:0.82rem;">
+            Se firman los ejemplares de ley y cada parte recibe el suyo en este acto.
+        </p>
+
+    </div>
+
+    <!-- Firmas -->
+    <div class="ct-firmas">
+        <div class="ct-firma">
+            <div class="ct-firma-box"></div>
+            <div class="ct-firma-linea">El Consignante</div>
+            <div style="font-weight:600;font-size:0.82rem;">@Model.ConsignanteNombre</div>
+            <div class="ct-firma-cc">C.I. / RUC: @(Model.ConsignanteCI ?? "___________________")</div>
+        </div>
+        <div class="ct-firma">
+            <div class="ct-firma-box"></div>
+            <div class="ct-firma-linea">La Consignataria</div>
+            <div style="font-weight:600;font-size:0.82rem;">A&amp;J Autos Usados — PlayaAutos S.A.</div>
+            <div class="ct-firma-cc">Representante Legal</div>
+        </div>
+    </div>
+
+</div><!-- /sheet -->
+</div><!-- /page-wrap -->
+
+</body>
+</html>

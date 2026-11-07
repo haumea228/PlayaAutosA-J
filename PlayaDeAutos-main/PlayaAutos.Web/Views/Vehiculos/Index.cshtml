@@ -1,0 +1,289 @@
+@model List<PlayaAutos.Web.Models.VehiculoListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Vehículos";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Vehículos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+
+        @await Html.PartialAsync("_Sidebar")
+
+        <div class="pa-content">
+
+            <!-- Header -->
+            <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4><i class="fa-solid fa-car me-2" style="color:var(--pa-accent);"></i>Vehículos</h4>
+                    <p>Gestión del inventario de vehículos</p>
+                </div>
+                <a href="/Vehiculos/Crear" class="btn-pa-primary">
+                    <i class="fa-solid fa-plus"></i> Registrar vehículo
+                </a>
+            </div>
+
+            <!-- Alertas -->
+            @if (TempData["Exito"] != null)
+            {
+                <div class="pa-alert success mb-3">
+                    <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="pa-alert danger mb-3">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+                </div>
+            }
+
+            <!-- Buscador y Filtros -->
+            <div class="pa-card p-3 mb-3">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-wrapper" style="max-width:350px;flex:1;">
+                        <input type="text" id="buscador" class="pa-input" placeholder="Buscar por marca, modelo, código..." />
+                        <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                    </div>
+                    <select id="filtroEstado" class="pa-input" style="max-width:180px;">
+                        <option value="">Todos los estados</option>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Reservado">Reservado</option>
+                        <option value="Vendido">Vendido</option>
+                        <option value="Consignado">Consignado</option>
+                    </select>
+                    <button type="button" class="btn-pa-ghost" onclick="exportarVehiculos()" title="Exportar a Excel">
+                        <i class="fa-solid fa-file-excel me-1"></i> Exportar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="pa-card" style="overflow:hidden;">
+                @if (!Model.Any())
+                {
+                    <div style="text-align:center;padding:4rem 2rem;">
+                        <i class="fa-solid fa-car-side" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                        <p style="color:var(--pa-muted);margin:0;">No hay vehículos registrados.</p>
+                        <a href="/Vehiculos/Crear" class="btn-pa-primary mt-3 d-inline-flex">
+                            <i class="fa-solid fa-plus"></i> Registrar el primero
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;">
+                        <table class="pa-table" id="tablaVehiculos">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Código</th>
+                                    <th>Vehículo</th>
+                                    <th>Año</th>
+                                    <th>Km</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                    <th>Condición</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var v in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(v.FotoPrincipal))
+                                            {
+                                                <img src="@v.FotoPrincipal" alt="foto"
+                                                     style="width:52px;height:40px;object-fit:cover;border-radius:6px;border:1px solid var(--pa-border);" />
+                                            }
+                                            else
+                                            {
+                                                <div style="width:52px;height:40px;background:var(--pa-bg);border-radius:6px;border:1px solid var(--pa-border);display:flex;align-items:center;justify-content:center;">
+                                                    <i class="fa-solid fa-image" style="color:var(--pa-border);font-size:1rem;"></i>
+                                                </div>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span style="font-family:monospace;font-size:0.82rem;background:var(--pa-bg);padding:2px 7px;border-radius:5px;border:1px solid var(--pa-border);">
+                                                @v.CodigoInterno
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div style="font-weight:600;">@v.Marca @v.Modelo</div>
+                                            @if (!string.IsNullOrEmpty(v.Color))
+                                            {
+                                                <div style="font-size:0.78rem;color:var(--pa-muted);">@v.Color</div>
+                                            }
+                                        </td>
+                                        <td style="font-weight:600;">@v.Anio</td>
+                                        <td>
+                                            @if (v.Kilometraje.HasValue)
+                                            {
+                                                <span>@v.Kilometraje.Value.ToString("N0") km</span>
+                                            }
+                                            else
+                                            {
+                                                <span style="color:var(--pa-muted);">—</span>
+                                            }
+                                        </td>
+                                        <td style="font-weight:700;color:var(--pa-success);">
+                                            Gs. @v.PrecioVenta.ToString("N0")
+                                        </td>
+                                        <td>
+                                            <span class="estado-badge">@v.Estado</span>
+                                        </td>
+                                        <td>
+                                            <span style="font-size:0.8rem;color:var(--pa-muted);">@v.Condicion</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="/Vehiculos/Editar/@v.VehiculoId" class="action-btn edit" title="Editar">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </a>
+                                                <button type="button" class="action-btn delete"
+                                                        onclick="confirmarEliminar(@v.VehiculoId, '@v.Marca @v.Modelo @v.Anio')"
+                                                        title="Eliminar">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <!-- Total -->
+            @if (Model.Any())
+            {
+                <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                    <span id="totalVisible">@Model.Count</span> vehículo(s)
+                </p>
+            }
+
+        </div>
+    </div>
+
+    <!-- Modal de eliminación -->
+    <div id="modalEliminar" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:var(--pa-surface);border:1px solid var(--pa-border);border-radius:14px;padding:2rem;max-width:420px;width:90%;text-align:center;">
+            <div style="width:54px;height:54px;background:rgba(233,69,96,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                <i class="fa-solid fa-trash" style="color:var(--pa-accent);font-size:1.3rem;"></i>
+            </div>
+            <h5 style="margin-bottom:0.5rem;font-weight:700;">Eliminar vehículo</h5>
+            <p style="color:var(--pa-muted);font-size:0.9rem;margin-bottom:1.5rem;" id="msgEliminar"></p>
+            <form id="formEliminar" method="post">
+                @Html.AntiForgeryToken()
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn-pa-ghost" onclick="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn-pa-primary">Sí, eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+            .estado-badge {
+                display: inline-block;
+                padding: 0.2em 0.65em;
+                font-size: 0.75rem;
+                font-weight: 600;
+                border-radius: 50px;
+                background: rgba(59,130,246,.12);
+                color: var(--pa-info);
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 7px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8rem;
+                border: 1px solid var(--pa-border);
+                background: transparent;
+                cursor: pointer;
+                transition: background var(--ease), border-color var(--ease);
+                text-decoration: none;
+                color: var(--pa-muted);
+            }
+
+                .action-btn.edit:hover {
+                    background: rgba(59,130,246,.12);
+                    border-color: var(--pa-info);
+                    color: var(--pa-info);
+                }
+
+                .action-btn.delete:hover {
+                    background: rgba(233,69,96,.12);
+                    border-color: var(--pa-accent);
+                    color: var(--pa-accent);
+                }
+    </style>
+
+    <script>
+            function filtrarVehiculos() {
+                const q = document.getElementById('buscador').value.toLowerCase();
+                const estado = document.getElementById('filtroEstado').value;
+                const filas = document.querySelectorAll('#tablaVehiculos tbody tr');
+                let visibles = 0;
+                filas.forEach(tr => {
+                    const texto = tr.textContent.toLowerCase();
+                    const textoOk = !q || texto.includes(q);
+                    const estadoOk = !estado || tr.querySelector('.estado-badge')?.textContent.trim() === estado;
+                    const mostrar = textoOk && estadoOk;
+                    tr.style.display = mostrar ? '' : 'none';
+                    if (mostrar) visibles++;
+                });
+                document.getElementById('totalVisible').textContent = visibles;
+            }
+
+            document.getElementById('buscador').addEventListener('input', filtrarVehiculos);
+            document.getElementById('filtroEstado').addEventListener('change', filtrarVehiculos);
+
+            function exportarVehiculos() {
+                const q = document.getElementById('buscador')?.value || '';
+                const estado = document.getElementById('filtroEstado')?.value || '';
+                window.location.href = '/Vehiculos/ExportarExcel?busqueda=' + encodeURIComponent(q) + '&estado=' + encodeURIComponent(estado);
+            }
+
+            function confirmarEliminar(id, nombre) {
+                document.getElementById('msgEliminar').textContent =
+                    `¿Está seguro que desea eliminar "${nombre}"? Esta acción no se puede deshacer.`;
+                document.getElementById('formEliminar').action = `/Vehiculos/Eliminar`;
+                let hiddenId = document.getElementById('hiddenVehiculoId');
+                if (!hiddenId) {
+                    hiddenId = document.createElement('input');
+                    hiddenId.type = 'hidden';
+                    hiddenId.name = 'id';
+                    hiddenId.id = 'hiddenVehiculoId';
+                    document.getElementById('formEliminar').appendChild(hiddenId);
+                }
+                hiddenId.value = id;
+                document.getElementById('modalEliminar').style.display = 'flex';
+            }
+
+            function cerrarModal() {
+                document.getElementById('modalEliminar').style.display = 'none';
+            }
+
+            document.getElementById('modalEliminar').addEventListener('click', function (e) {
+                if (e.target === this) cerrarModal();
+            });
+    </script>
+</body>
+</html>

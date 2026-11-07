@@ -1,0 +1,340 @@
+@model PlayaAutos.Web.Models.AprobarTasacionViewModel
+@using System.Text.Json
+@{
+    Layout = null;
+    ViewData["Title"] = "Aprobar Tasación";
+    var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var modelosJson = Html.Raw(JsonSerializer.Serialize(Model.ModelosConMarca, jsonOpts));
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Aprobar Tasación</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Tasaciones" class="action-btn" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-check-circle me-2" style="color:#22c55e;"></i>Aprobar Tasación #@Model.TasacionVehiculoId</h4>
+                <p>Revise y confirme los valores antes de aprobar</p>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+            </div>
+        }
+
+        <form asp-action="Aprobar" asp-route-id="@Model.TasacionVehiculoId" method="post" id="formAprobar" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="TasacionVehiculoId" />
+
+            <div class="row g-3">
+                <div class="col-lg-7">
+
+                    <!-- Datos existentes -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-car me-1" style="color:var(--pa-accent);"></i>
+                            Datos del vehículo tasado
+                        </div>
+                        <div class="row g-2" style="font-size:0.88rem;">
+                            <div class="col-6">
+                                <div class="info-row">
+                                    <span class="info-label">Cliente</span>
+                                    <span class="info-value">@Model.ClienteNombre</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="info-row">
+                                    <span class="info-label">Vehículo</span>
+                                    <span class="info-value">@Model.MarcaVehiculo @Model.ModeloVehiculo</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="info-row">
+                                    <span class="info-label">Año</span>
+                                    <span class="info-value">@Model.AnhoVehiculo</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="info-row">
+                                    <span class="info-label">Kilometraje</span>
+                                    <span class="info-value">@Model.KilometrajeVehiculo.ToString("N0") km</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="info-row">
+                                    <span class="info-label">Color</span>
+                                    <span class="info-value">@(Model.ColorVehiculo ?? "—")</span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="info-row">
+                                    <span class="info-label">Estado general</span>
+                                    <span class="info-value">@Model.EstadoGeneralVehiculo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Valores finales -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-tags me-1" style="color:var(--pa-accent);"></i>
+                            Valores finales
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ValorTasacionFinal" class="pa-label">Valor de tasación final (Gs.) *</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="ValorTasacionFinal" type="number" class="pa-input"
+                                           min="1" style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="ValorTasacionFinal" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PrecioVentaFinal" class="pa-label">Precio de venta final (Gs.) *</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="PrecioVentaFinal" type="number" class="pa-input"
+                                           min="1" style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="PrecioVentaFinal" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos para crear vehículo en inventario -->
+                    <div class="pa-card p-4">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-car me-1" style="color:var(--pa-accent);"></i>
+                            Datos del vehículo para la venta
+                            <small style="font-weight:400;color:var(--pa-muted);margin-left:.5rem;font-size:0.78rem;">
+                                Se guardan en la tasación y se usan al crear el vehículo en la venta
+                            </small>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="pa-label">Marca</label>
+                                <select id="selectMarcaAprobar" class="pa-input">
+                                    <option value="">— Seleccione marca —</option>
+                                </select>
+                                <small style="color:var(--pa-muted);font-size:0.75rem;">Filtra los modelos disponibles</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ModeloId" class="pa-label">Modelo *</label>
+                                <select asp-for="ModeloId" class="pa-input" id="selectModeloAprobar">
+                                    <option value="">— Seleccione modelo —</option>
+                                </select>
+                                <span asp-validation-for="ModeloId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="TipoId" class="pa-label">Tipo *</label>
+                                <select asp-for="TipoId" class="pa-input" id="TipoId">
+                                    <option value="">— Seleccione —</option>
+                                </select>
+                                <span asp-validation-for="TipoId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="CondicionId" class="pa-label">Condición *</label>
+                                <select asp-for="CondicionId" class="pa-input" id="CondicionId">
+                                    <option value="">— Seleccione —</option>
+                                </select>
+                                <span asp-validation-for="CondicionId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="OrigenId" class="pa-label">Origen *</label>
+                                <select asp-for="OrigenId" class="pa-input" id="OrigenId">
+                                    <option value="">— Seleccione —</option>
+                                </select>
+                                <span asp-validation-for="OrigenId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Color" class="pa-label">Color</label>
+                                <input asp-for="Color" class="pa-input" placeholder="Ej: Blanco" />
+                                <span asp-validation-for="Color" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Kilometraje" class="pa-label">Kilometraje *</label>
+                                <input asp-for="Kilometraje" type="number" class="pa-input" min="0" />
+                                <span asp-validation-for="Kilometraje" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Panel lateral -->
+                <div class="col-lg-5">
+                    <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                        <div class="section-title mb-3" style="color:#22c55e;">
+                            <i class="fa-solid fa-check-circle me-1"></i>
+                            Efecto de la aprobación
+                        </div>
+                        <div style="font-size:0.83rem;color:var(--pa-muted);line-height:1.9;">
+                            <div class="efecto-item">
+                                <i class="fa-solid fa-right-left me-2" style="color:var(--pa-info);width:16px;"></i>
+                                La tasación pasará a estado <strong style="color:var(--pa-text);">Aprobada</strong>
+                            </div>
+                            <div class="efecto-item">
+                                <i class="fa-solid fa-floppy-disk me-2" style="color:var(--pa-accent);width:16px;"></i>
+                                Los datos del vehículo quedan guardados en la tasación
+                            </div>
+                            <div class="efecto-item">
+                                <i class="fa-solid fa-handshake me-2" style="color:#818cf8;width:16px;"></i>
+                                Podrá usarse como permuta en una venta
+                            </div>
+                            <div class="efecto-item">
+                                <i class="fa-solid fa-warehouse me-2" style="color:#22c55e;width:16px;"></i>
+                                El vehículo se ingresará al inventario <strong style="color:var(--pa-text);">al finalizar la venta</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Tasaciones" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnAprobar"
+                        style="background:#22c55e;border-color:#22c55e;">
+                    <i class="fa-solid fa-check"></i> Aprobar tasación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .val-msg { font-size: 0.78rem; color: #f87191; margin-top: 3px; display: block; }
+    .action-btn {
+        width: 34px; height: 34px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border); background: transparent;
+        color: var(--pa-muted); text-decoration: none;
+        transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+    .info-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: .5rem; }
+    .info-label { font-size: 0.72rem; color: var(--pa-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .info-value { font-weight: 600; color: var(--pa-text); }
+    .efecto-item { display: flex; align-items: center; margin-bottom: .5rem; }
+</style>
+
+<script>
+    // ============ DATOS ============
+    const allModelosAprobar = @modelosJson;
+    
+    var tiposData = @Html.Raw(JsonSerializer.Serialize(Model.Tipos.Select(t => new { id = t.Value, nombre = t.Text }), jsonOpts));
+    var condicionesData = @Html.Raw(JsonSerializer.Serialize(Model.Condiciones.Select(c => new { id = c.Value, nombre = c.Text }), jsonOpts));
+    var origenesData = @Html.Raw(JsonSerializer.Serialize(Model.Origenes.Select(o => new { id = o.Value, nombre = o.Text }), jsonOpts));
+
+    if (!tiposData || tiposData.length === 0) {
+        tiposData = [{id:"1",nombre:"Sedán"},{id:"2",nombre:"SUV"},{id:"3",nombre:"Pickup"},{id:"4",nombre:"Hatchback"},{id:"5",nombre:"Camioneta"},{id:"6",nombre:"Moto"}];
+    }
+    if (!condicionesData || condicionesData.length === 0) {
+        condicionesData = [{id:"1",nombre:"Nuevo"},{id:"2",nombre:"Usado"}];
+    }
+    if (!origenesData || origenesData.length === 0) {
+        origenesData = [{id:"1",nombre:"Propio"},{id:"2",nombre:"Consigna"}];
+    }
+
+    // ============ MARCAS Y MODELOS ============
+    const selectMarca  = document.getElementById('selectMarcaAprobar');
+    const selectModelo = document.getElementById('selectModeloAprobar');
+
+    if (!allModelosAprobar || allModelosAprobar.length === 0) {
+        selectMarca.innerHTML = '<option value="">— No hay marcas —</option>';
+        selectModelo.innerHTML = '<option value="">— No hay modelos —</option>';
+    } else {
+        const marcas = [...new Set(allModelosAprobar.map(m => m.nombreMarca).filter(Boolean))].sort();
+        marcas.forEach(nombre => {
+            const opt = document.createElement('option');
+            opt.value = nombre;
+            opt.textContent = nombre;
+            selectMarca.appendChild(opt);
+        });
+    }
+
+    function buildModeloOptions(marcaFiltro) {
+        const current = selectModelo.value;
+        selectModelo.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+        const filtrados = marcaFiltro ? allModelosAprobar.filter(m => m.nombreMarca === marcaFiltro) : allModelosAprobar;
+        filtrados.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.modeloId;
+            opt.textContent = m.nombreModelo;
+            selectModelo.appendChild(opt);
+        });
+        if (current && selectModelo.querySelector('option[value="' + current + '"]')) {
+            selectModelo.value = current;
+        }
+    }
+
+    selectMarca.addEventListener('change', () => buildModeloOptions(selectMarca.value));
+
+    // ============ TIPOS, CONDICIONES, ORÍGENES ============
+    function llenarSelect(id, data) {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
+        data.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item.nombre;
+            sel.appendChild(opt);
+        });
+    }
+
+    llenarSelect('TipoId', tiposData);
+    llenarSelect('CondicionId', condicionesData);
+    llenarSelect('OrigenId', origenesData);
+
+    buildModeloOptions('');
+
+    // Pre-seleccionar valores guardados
+    var modeloId = @Model.ModeloId;
+    if (modeloId && modeloId !== 0) {
+        var found = allModelosAprobar.find(function(m) { return m.modeloId === modeloId; });
+        if (found) {
+            selectMarca.value = found.nombreMarca;
+            buildModeloOptions(found.nombreMarca);
+            selectModelo.value = modeloId;
+        }
+    }
+    var tipoId = @Model.TipoId;
+    var condicionId = @Model.CondicionId;
+    var origenId = @Model.OrigenId;
+    if (tipoId) document.getElementById('TipoId').value = tipoId;
+    if (condicionId) document.getElementById('CondicionId').value = condicionId;
+    if (origenId) document.getElementById('OrigenId').value = origenId;
+
+    document.getElementById('formAprobar').addEventListener('submit', () => {
+        document.getElementById('btnAprobar').disabled = true;
+        document.getElementById('btnAprobar').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aprobando...';
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<!-- HERO -->
+<section class="pa-hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <div class="hero-badge">
+                    <i class="fa-solid fa-circle-check"></i>
+                    Sistema de Gestión Automotriz
+                </div>
+                <h1 class="hero-title">
+                    Gestiona tu<br>concesionario<br><span>sin complicaciones</span>
+                </h1>
+                <p class="hero-subtitle">
+                    PlayaAutos centraliza vehículos, clientes, ventas, citas y caja en una sola plataforma.
+                    Todo lo que necesitas para operar tu negocio con eficiencia.
+                </p>
+                <div class="hero-cta">
+                    <a asp-controller="Auth" asp-action="Login" class="btn-pa-primary">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Ingresar al sistema
+                    </a>
+                    <a href="#features" class="btn-pa-ghost">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Ver funciones
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-visual">
+                    <div class="hero-card-float">
+                        <div class="hcf-header">
+                            <div class="hcf-dot red"></div>
+                            <div class="hcf-dot yellow"></div>
+                            <div class="hcf-dot green"></div>
+                            <span style="font-size:0.75rem;color:var(--pa-muted);margin-left:auto;">Dashboard — A&J Autos</span>
+                        </div>
+                        <div class="hero-stat-row">
+                            <div class="hero-stat-item">
+                                <div class="hs-value text-pa-warning">24</div>
+                                <div class="hs-label">Vehículos</div>
+                            </div>
+                            <div class="hero-stat-item">
+                                <div class="hs-value text-pa-info">138</div>
+                                <div class="hs-label">Clientes</div>
+                            </div>
+                            <div class="hero-stat-item">
+                                <div class="hs-value text-pa-success">12</div>
+                                <div class="hs-label">Ventas mes</div>
+                            </div>
+                            <div class="hero-stat-item">
+                                <div class="hs-value text-pa-accent">7</div>
+                                <div class="hs-label">Citas hoy</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--pa-border);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+                                <span style="font-size:0.78rem;color:var(--pa-muted);">Meta mensual de ventas</span>
+                                <span style="font-size:0.78rem;font-weight:600;color:var(--pa-success);">72%</span>
+                            </div>
+                            <div style="height:6px;background:var(--pa-bg);border-radius:99px;overflow:hidden;">
+                                <div style="width:72%;height:100%;background:linear-gradient(90deg,#0f3460,#10b981);border-radius:99px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="pa-features" id="features">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="hero-badge mx-auto" style="width:fit-content;">
+                <i class="fa-solid fa-stars"></i>
+                Funcionalidades
+            </div>
+            <h2 style="font-size:2rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:0.5rem;">
+                Todo lo que necesita tu concesionario
+            </h2>
+            <p style="color:var(--pa-muted);max-width:480px;margin:0 auto;font-size:0.93rem;line-height:1.7;">
+                Módulos integrados para gestionar cada aspecto de tu negocio automotriz.
+            </p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-car"></i></div>
+                    <h6>Inventario de Vehículos</h6>
+                    <p>Registra y consulta todo el stock disponible con fotos, especificaciones, precios y estados en tiempo real.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
+                    <h6>Gestión de Clientes</h6>
+                    <p>Base de datos completa con historial de compras, preferencias y comunicaciones por cliente.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-handshake"></i></div>
+                    <h6>Control de Ventas</h6>
+                    <p>Registra cada operación, genera contratos y monitorea el rendimiento de tu equipo comercial.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <h6>Agenda de Citas</h6>
+                    <p>Organiza visitas, pruebas de manejo y revisiones mecánicas con recordatorios automáticos.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <h6>Facturación</h6>
+                    <p>Genera facturas y comprobantes profesionales en segundos con todos los datos fiscales necesarios.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-cash-register"></i></div>
+                    <h6>Caja y Tesorería</h6>
+                    <p>Control total de ingresos y egresos, cierres de caja y reportes financieros detallados.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA FINAL -->
+<section style="padding:4rem 0 5rem;">
+    <div class="container text-center">
+        <div style="background:var(--pa-surface);border:1px solid var(--pa-border);border-radius:18px;padding:3rem 2rem;max-width:620px;margin:0 auto;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-40px;right:-40px;width:150px;height:150px;background:radial-gradient(circle,rgba(233,69,96,0.15),transparent);border-radius:50%;"></div>
+            <div style="position:absolute;bottom:-40px;left:-40px;width:120px;height:120px;background:radial-gradient(circle,rgba(15,52,96,0.4),transparent);border-radius:50%;"></div>
+            <i class="fa-solid fa-rocket" style="font-size:2.5rem;color:var(--pa-accent);margin-bottom:1.25rem;display:block;"></i>
+            <h3 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.4px;margin-bottom:0.75rem;">
+                Listo para comenzar?
+            </h3>
+            <p style="color:var(--pa-muted);font-size:0.92rem;margin-bottom:2rem;line-height:1.65;">
+                Ingresa al sistema y empieza a gestionar tu concesionario de forma profesional desde hoy.
+            </p>
+            <a asp-controller="Auth" asp-action="Login" class="btn-pa-primary" style="font-size:1rem;padding:0.75rem 2rem;">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                Ingresar ahora
+            </a>
+        </div>
+    </div>
+</section>

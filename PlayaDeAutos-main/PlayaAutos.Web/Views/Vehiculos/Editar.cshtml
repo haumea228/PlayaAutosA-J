@@ -1,0 +1,501 @@
+@model PlayaAutos.Web.Models.VehiculoViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Editar Vehículo";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Editar Vehículo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Header -->
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Vehiculos" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-pen me-2" style="color:var(--pa-accent);"></i>Editar Vehículo</h4>
+                <p>Modifique los campos que desea actualizar</p>
+            </div>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+                @foreach (var err in ViewData.ModelState[string.Empty]?.Errors ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.ModelBinding.ModelError>())
+                {
+                    <div style="margin-top:0.35rem;">@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-action="Editar" asp-route-id="@Model.VehiculoId"
+              method="post" enctype="multipart/form-data" id="formEditar" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="VehiculoId" />
+            <input type="hidden" asp-for="FotoIdsEliminar" id="hidFotoIdsEliminar" />
+
+            <div class="row g-3">
+
+                <!-- ══════ Columna izquierda ══════ -->
+                <div class="col-lg-8">
+
+                    <!-- Identificación -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-id-card me-1" style="color:var(--pa-accent);"></i>
+                            Identificación
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label asp-for="CodigoInterno" class="pa-label">Código Interno *</label>
+                                <input asp-for="CodigoInterno" class="pa-input" placeholder="Ej: VH-001" />
+                                <span asp-validation-for="CodigoInterno" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="MarcaId" class="pa-label">Marca *</label>
+                                <select asp-for="MarcaId" id="selMarca" class="pa-input">
+                                    <option value="0">— Seleccione —</option>
+                                    @foreach (var m in Model.Marcas)
+                                    {
+                                        <option value="@m.Value">@m.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="MarcaId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="ModeloId" class="pa-label">Modelo *</label>
+                                <select asp-for="ModeloId" id="selModelo" class="pa-input">
+                                    <option value="0">— Seleccione marca —</option>
+                                    @foreach (var m in Model.Modelos)
+                                    {
+                                        <option value="@m.Value" data-marca="@m.Group?.Name">@m.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="ModeloId" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Características -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-sliders me-1" style="color:var(--pa-accent);"></i>
+                            Características
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label asp-for="TipoId" class="pa-label">Tipo *</label>
+                                <select asp-for="TipoId" class="pa-input">
+                                    <option value="0">— Seleccione —</option>
+                                    @foreach (var t in Model.Tipos)
+                                    {
+                                        <option value="@t.Value">@t.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="TipoId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="CondicionId" class="pa-label">Condición *</label>
+                                <select asp-for="CondicionId" class="pa-input">
+                                    <option value="0">— Seleccione —</option>
+                                    @foreach (var c in Model.Condiciones)
+                                    {
+                                        <option value="@c.Value">@c.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="CondicionId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="EstadoId" class="pa-label">Estado *</label>
+                                <select asp-for="EstadoId" class="pa-input">
+                                    <option value="0">— Seleccione —</option>
+                                    @foreach (var e in Model.Estados)
+                                    {
+                                        <option value="@e.Value">@e.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="EstadoId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="OrigenId" class="pa-label">Origen *</label>
+                                <select asp-for="OrigenId" class="pa-input">
+                                    <option value="0">— Seleccione —</option>
+                                    @foreach (var o in Model.Origenes)
+                                    {
+                                        <option value="@o.Value">@o.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="OrigenId" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-2">
+                                <label asp-for="Anio" class="pa-label">Año *</label>
+                                <input asp-for="Anio" type="number" class="pa-input" min="1900" max="2030" />
+                                <span asp-validation-for="Anio" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Color" class="pa-label">Color</label>
+                                <input asp-for="Color" class="pa-input" placeholder="Ej: Blanco perla" />
+                                <span asp-validation-for="Color" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Kilometraje" class="pa-label">Kilometraje</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="Kilometraje" type="number" class="pa-input" placeholder="0" min="0" />
+                                    <span class="input-icon" style="font-size:0.7rem;font-weight:600;color:var(--pa-muted);">km</span>
+                                </div>
+                                <span asp-validation-for="Kilometraje" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @await Html.PartialAsync("_FichaTecnica", Model)
+
+                    <!-- Precios -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-dollar-sign me-1" style="color:var(--pa-accent);"></i>
+                            Precios
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="PrecioVenta" class="pa-label">Precio de Venta (Gs.) *</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="PrecioVenta" type="number" class="pa-input" placeholder="0" min="1"
+                                           style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-success);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="PrecioVenta" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CostoAdquisicion" class="pa-label">Costo de Adquisición (Gs.)</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="CostoAdquisicion" type="number" class="pa-input" placeholder="0" min="0"
+                                           style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="CostoAdquisicion" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="pa-card p-4">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-align-left me-1" style="color:var(--pa-accent);"></i>
+                            Descripción
+                        </div>
+                        <textarea asp-for="Descripcion" class="pa-input" rows="4"
+                                  placeholder="Descripción del vehículo, equipamiento, observaciones..."
+                                  style="resize:vertical;"></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span asp-validation-for="Descripcion" class="val-msg"></span>
+                            <span id="charCount" style="font-size:0.75rem;color:var(--pa-muted);">0 / 1000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════ Columna derecha — Imágenes ══════ -->
+                <div class="col-lg-4">
+                    <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-images me-1" style="color:var(--pa-accent);"></i>
+                            Imágenes
+                        </div>
+
+                        <!-- Fotos existentes -->
+                        @if (Model.FotosExistentes.Any())
+                        {
+                            <div id="fotosExistentes" style="margin-bottom:1rem;">
+                                <p style="font-size:0.78rem;color:var(--pa-muted);margin-bottom:0.5rem;">
+                                    Fotos actuales — hacé clic en <i class="fa-solid fa-xmark"></i> para eliminar
+                                </p>
+                                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;">
+                                    @foreach (var foto in Model.FotosExistentes)
+                                    {
+                                        <div class="preview-item" id="foto-@foto.FotoId">
+                                            <img src="@foto.URL" alt="foto"
+                                                 onerror="this.src='/img/no-image.png'" />
+                                            @if (foto.EsPrincipal)
+                                            {
+                                                <span class="principal-badge">Principal</span>
+                                            }
+                                            <button type="button" class="btn-remove"
+                                                    onclick="marcarEliminar(@foto.FotoId, '@foto.NombreArchivo')">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <hr style="border-color:var(--pa-border);margin:0.75rem 0;" />
+                        }
+
+                        <!-- Drop zone para nuevas fotos -->
+                        <div id="dropZone" onclick="document.getElementById('inputFotos').click()">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:1.8rem;color:var(--pa-border);display:block;margin-bottom:0.5rem;"></i>
+                            <p style="font-weight:600;color:var(--pa-text);margin:0 0 0.2rem;font-size:0.9rem;">
+                                Agregar más fotos
+                            </p>
+                            <p style="font-size:0.75rem;color:var(--pa-muted);margin:0;">
+                                JPG, PNG, WEBP · Máx. 5 MB
+                            </p>
+                        </div>
+
+                        <input type="file" id="inputFotos" name="Fotos" multiple accept=".jpg,.jpeg,.png,.webp"
+                               style="display:none;" />
+
+                        <span asp-validation-for="Fotos" class="val-msg d-block mt-2"></span>
+
+                        <!-- Previews de nuevas fotos -->
+                        <div id="previewsContainer" style="display:none;margin-top:1rem;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                                <span style="font-size:0.78rem;color:var(--pa-muted);">
+                                    <span id="countFotos">0</span> nueva(s)
+                                </span>
+                                <button type="button" onclick="limpiarFotos()"
+                                        style="background:none;border:none;color:var(--pa-accent);font-size:0.78rem;cursor:pointer;padding:0;">
+                                    Quitar todas
+                                </button>
+                            </div>
+                            <div id="previews" style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;"></div>
+                        </div>
+
+                        <div style="margin-top:1rem;padding:0.75rem;background:var(--pa-bg);border-radius:8px;border:1px solid var(--pa-border);font-size:0.78rem;color:var(--pa-muted);">
+                            <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-info);"></i>
+                            Las fotos eliminadas se borran al guardar. Las nuevas se agregan al final.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Vehiculos" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnGuardar">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    #dropZone {
+        border: 2px dashed var(--pa-border);
+        border-radius: 10px;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color var(--ease), background var(--ease);
+    }
+    #dropZone:hover, #dropZone.drag-over {
+        border-color: var(--pa-accent);
+        background: rgba(233,69,96,0.04);
+    }
+    .preview-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        border: 1px solid var(--pa-border);
+        transition: opacity 0.3s;
+    }
+    .preview-item.eliminando {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+    .preview-item img { width:100%;height:100%;object-fit:cover;display:block; }
+    .principal-badge {
+        position:absolute;top:4px;left:4px;
+        background:var(--pa-accent);color:white;
+        font-size:0.62rem;font-weight:700;
+        padding:2px 6px;border-radius:4px;text-transform:uppercase;
+    }
+    .btn-remove {
+        position:absolute;top:4px;right:4px;
+        width:22px;height:22px;
+        background:rgba(0,0,0,0.6);border:none;border-radius:50%;
+        color:white;font-size:0.65rem;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+    }
+    .val-msg { font-size:0.78rem;color:#f87191;margin-top:3px;display:block; }
+    .pa-input.input-error { border-color: var(--pa-accent) !important; }
+    select, select:focus, select:focus-visible, select:active, select:hover {
+        outline: none !important;
+        outline-style: none !important;
+        outline-color: transparent !important;
+        outline-width: 0 !important;
+        -webkit-focus-ring-color: transparent !important;
+        box-shadow: none !important;
+        border-color: var(--pa-border) !important;
+    }
+    select.pa-input:focus, select.pa-input:focus-visible {
+        border-color: var(--pa-border) !important;
+        background-color: #1e2a48 !important;
+    }
+    .action-btn {
+        width:34px;height:34px;border-radius:8px;
+        display:inline-flex;align-items:center;justify-content:center;
+        border:1px solid var(--pa-border);background:transparent;
+        color:var(--pa-muted);text-decoration:none;
+        transition:background var(--ease);
+    }
+    .action-btn:hover { background:rgba(255,255,255,0.06);color:var(--pa-text); }
+</style>
+
+<script>
+    // ── Contador caracteres ───────────────────────────────────────────
+    const textarea  = document.querySelector('textarea[name="Descripcion"]');
+    const charCount = document.getElementById('charCount');
+    charCount.textContent = `${textarea.value.length} / 1000`;
+    textarea.addEventListener('input', () => {
+        charCount.textContent = `${textarea.value.length} / 1000`;
+    });
+
+    // ── Eliminar fotos existentes ────────────────────────────────────
+    const hidEliminar = document.getElementById('hidFotoIdsEliminar');
+    let idsEliminar = [];  // [{id, file}]
+
+    function marcarEliminar(fotoId, nombreArchivo) {
+        idsEliminar.push({ id: fotoId, file: nombreArchivo });
+        hidEliminar.value = idsEliminar.map(x => `${x.id}|${x.file}`).join(',');
+        document.getElementById(`foto-${fotoId}`).classList.add('eliminando');
+    }
+
+    // ── Nuevas imágenes ───────────────────────────────────────────────
+    let archivosSeleccionados = [];
+    const inputFotos  = document.getElementById('inputFotos');
+    const dropZone    = document.getElementById('dropZone');
+    const previews    = document.getElementById('previews');
+    const container   = document.getElementById('previewsContainer');
+    const countFotos  = document.getElementById('countFotos');
+
+    inputFotos.addEventListener('change', () => procesarArchivos(inputFotos.files));
+
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        procesarArchivos(e.dataTransfer.files);
+    });
+
+    function procesarArchivos(files) {
+        const permitidos = ['.jpg','.jpeg','.png','.webp'];
+        Array.from(files).forEach(file => {
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            if (!permitidos.includes(ext)) return;
+            if (file.size > 5 * 1024 * 1024) return;
+            if (archivosSeleccionados.find(f => f.name === file.name && f.size === file.size)) return;
+            archivosSeleccionados.push(file);
+        });
+        renderPreviews();
+        sincronizarInput();
+    }
+
+    function renderPreviews() {
+        previews.innerHTML = '';
+        archivosSeleccionados.forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="preview" />
+                    <button type="button" class="btn-remove" onclick="quitarFoto(${i})">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>`;
+                previews.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+        countFotos.textContent = archivosSeleccionados.length;
+        container.style.display = archivosSeleccionados.length ? 'block' : 'none';
+    }
+
+    function quitarFoto(i) {
+        archivosSeleccionados.splice(i, 1);
+        renderPreviews();
+        sincronizarInput();
+    }
+
+    function limpiarFotos() {
+        archivosSeleccionados = [];
+        renderPreviews();
+        sincronizarInput();
+    }
+
+    function sincronizarInput() {
+        const dt = new DataTransfer();
+        archivosSeleccionados.forEach(f => dt.items.add(f));
+        inputFotos.files = dt.files;
+    }
+
+    // ── Submit loader ────────────────────────────────────────────────
+    document.getElementById('formEditar').addEventListener('submit', () => {
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    });
+
+    // ── Cascada Marca → Modelo ────────────────────────────────────────
+    const selMarca  = document.getElementById('selMarca');
+    const selModelo = document.getElementById('selModelo');
+    const todasOpciones = Array.from(selModelo.options).filter(o => o.value !== '0');
+
+    selMarca.addEventListener('change', filtrarModelos);
+
+    function filtrarModelos() {
+        const marcaId       = selMarca.value;
+        const modeloActual  = selModelo.value;
+        selModelo.innerHTML = '<option value="0">— Seleccione —</option>';
+
+        const filtradas = marcaId === '0'
+            ? todasOpciones
+            : todasOpciones.filter(o => o.dataset.marca === marcaId);
+
+        filtradas.forEach(o => selModelo.appendChild(o.cloneNode(true)));
+
+        // Restaurar selección previa si sigue disponible
+        if (filtradas.some(o => o.value === modeloActual))
+            selModelo.value = modeloActual;
+    }
+
+    // Al cargar, filtrar modelos según la marca pre-seleccionada
+    if (selMarca.value !== '0') filtrarModelos();
+
+    // Quitar focus ring nativo en selects
+    document.querySelectorAll('select.pa-input').forEach(s => {
+        const clear = () => {
+            s.style.setProperty('outline', 'none', 'important');
+            s.style.setProperty('outline-width', '0', 'important');
+            s.style.setProperty('box-shadow', 'none', 'important');
+            s.style.setProperty('border-color',
+                getComputedStyle(document.documentElement).getPropertyValue('--pa-border').trim(), 'important');
+        };
+        s.addEventListener('focus', clear);
+        s.addEventListener('mousedown', clear);
+    });
+</script>
+</body>
+</html>

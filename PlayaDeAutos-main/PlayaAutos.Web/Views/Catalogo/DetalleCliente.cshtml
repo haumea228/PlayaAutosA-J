@@ -1,0 +1,376 @@
+@model PlayaAutos.Web.Models.CatalogoDetalleViewModel
+@using System.Text.Json
+@{
+    Layout = null;
+    ViewData["Title"] = $"{Model.Marca} {Model.Modelo} {Model.Anio}";
+    var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    var fotosJson = Html.Raw(JsonSerializer.Serialize(Model.Fotos, jsonOpts));
+
+    bool tieneFotos = Model.Fotos.Any();
+    string primeraFoto = tieneFotos
+        ? (Model.Fotos.FirstOrDefault(f => f.EsPrincipal)?.URL ?? Model.Fotos[0].URL)
+        : (Model.FotoPrincipal ?? "");
+
+    string fmtGs(long n) => "Gs. " + n.ToString("N0");
+    string fmtKm(long n) => n.ToString("N0") + " km";
+
+    var vehiculoInfo = $"{Model.Marca} {Model.Modelo} {Model.Anio}";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.Marca @Model.Modelo @Model.Anio — A&amp;J Autos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { margin: 0; }
+
+        .cat-header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--pa-surface); border-bottom: 1px solid var(--pa-border);
+            box-shadow: 0 2px 16px rgba(0,0,0,.4);
+            padding: 0 2rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .cat-brand { display: flex; align-items: center; gap: .6rem; text-decoration: none; }
+        .cat-brand-icon {
+            width: 36px; height: 36px; border-radius: 9px;
+            background: var(--pa-accent); display: flex; align-items: center;
+            justify-content: center; color: #fff; font-weight: 800; font-size: .95rem;
+        }
+        .cat-brand-name { font-size: 1.15rem; font-weight: 800; color: var(--pa-text); letter-spacing: -.3px; }
+        .cat-brand-name span { color: var(--pa-accent); }
+        .header-actions { display: flex; align-items: center; gap: .75rem; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 8px; padding: .42rem .9rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .83rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-back:hover { border-color: var(--pa-text); color: var(--pa-text); }
+        .btn-mis-citas {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .45rem 1rem;
+            color: var(--pa-text); font-family: inherit; font-size: .85rem; font-weight: 600;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-mis-citas:hover { border-color: var(--pa-accent); color: var(--pa-accent); }
+        .btn-salir {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .45rem .9rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .83rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-salir:hover { border-color: var(--pa-muted); color: var(--pa-text); }
+
+        .det-page { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        .gallery-main {
+            width: 100%; height: 460px; border-radius: 16px; overflow: hidden;
+            background: var(--pa-surface2); position: relative; border: 1px solid var(--pa-border);
+        }
+        .gallery-main img { width: 100%; height: 100%; object-fit: cover; transition: opacity .25s; }
+        .gallery-no-photo {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--pa-muted); gap: .6rem;
+        }
+        .gallery-no-photo i { font-size: 5rem; opacity: .2; }
+        .gallery-btn {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 42px; height: 42px; border-radius: 50%;
+            background: rgba(26,26,46,.85); backdrop-filter: blur(6px);
+            border: 1px solid var(--pa-border); color: var(--pa-text);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all .2s; z-index: 10; font-size: .9rem;
+        }
+        .gallery-btn:hover { background: var(--pa-accent); border-color: var(--pa-accent); }
+        .gallery-btn.prev { left: .85rem; }
+        .gallery-btn.next { right: .85rem; }
+        .gallery-btn.hidden { display: none; }
+        .gallery-counter {
+            position: absolute; bottom: .85rem; right: .85rem;
+            background: rgba(26,26,46,.85); backdrop-filter: blur(6px);
+            border: 1px solid var(--pa-border); border-radius: 8px;
+            padding: .2rem .65rem; font-size: .75rem; color: var(--pa-muted);
+        }
+        .gallery-thumbs {
+            display: flex; gap: .6rem; margin-top: .85rem; overflow-x: auto;
+            padding-bottom: .25rem; scrollbar-width: thin;
+        }
+        .thumb {
+            flex-shrink: 0; width: 80px; height: 58px; border-radius: 8px;
+            overflow: hidden; cursor: pointer; border: 2px solid transparent;
+            transition: border-color .18s; background: var(--pa-surface2);
+        }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb.active { border-color: var(--pa-accent); }
+        .thumb:hover { border-color: var(--pa-muted); }
+
+        .det-info { display: flex; flex-direction: column; height: 100%; }
+        .det-badge-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+        .det-badge {
+            display: inline-flex; align-items: center; gap: .3rem;
+            background: var(--pa-surface2); border: 1px solid var(--pa-border);
+            border-radius: 6px; padding: .22rem .6rem; font-size: .72rem; color: var(--pa-muted);
+        }
+        .det-badge.nuevo { border-color: var(--pa-success); color: var(--pa-success); }
+        .det-badge.accent { border-color: var(--pa-accent); color: var(--pa-accent); }
+        .det-title { font-size: 1.85rem; font-weight: 800; color: var(--pa-text); line-height: 1.2; margin: 0 0 .25rem; }
+        .det-anio { color: var(--pa-muted); font-size: 1rem; font-weight: 400; }
+        .det-price { font-size: 2.1rem; font-weight: 800; color: var(--pa-accent); margin: .75rem 0; line-height: 1; }
+        .det-price small { font-size: .85rem; font-weight: 500; color: var(--pa-muted); margin-left: .3rem; }
+        .det-divider { border: none; border-top: 1px solid var(--pa-border); margin: 1rem 0; }
+        .det-specs { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+        .spec-item { display: flex; align-items: flex-start; gap: .65rem; }
+        .spec-icon {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: rgba(233,69,96,.12); display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+        }
+        .spec-icon i { font-size: .82rem; color: var(--pa-accent); }
+        .spec-label { font-size: .7rem; color: var(--pa-muted); margin: 0; line-height: 1; }
+        .spec-value { font-size: .88rem; font-weight: 600; color: var(--pa-text); margin: .15rem 0 0; }
+        .det-desc {
+            background: var(--pa-surface2); border: 1px solid var(--pa-border);
+            border-radius: 10px; padding: 1rem 1.1rem;
+            font-size: .88rem; line-height: 1.65; color: var(--pa-muted); margin-top: 1rem;
+        }
+        .det-desc-title { font-weight: 600; color: var(--pa-text); margin: 0 0 .4rem; font-size: .82rem; }
+        .det-cta { margin-top: auto; padding-top: 1.25rem; }
+        .btn-cta-primary {
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            width: 100%; padding: .9rem; border-radius: 12px;
+            background: var(--pa-accent); color: #fff;
+            border: none; font-family: inherit; font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: background .2s; text-decoration: none; margin-bottom: .6rem;
+        }
+        .btn-cta-primary:hover { background: var(--pa-accent-h); color: #fff; }
+        .btn-cta-secondary {
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            width: 100%; padding: .75rem; border-radius: 12px;
+            background: transparent; color: var(--pa-muted);
+            border: 1px solid var(--pa-border); font-family: inherit; font-size: .9rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-cta-secondary:hover { border-color: var(--pa-text); color: var(--pa-text); }
+
+        @@media (max-width: 768px) {
+            .det-page { padding: 1rem; }
+            .gallery-main { height: 260px; }
+            .det-title { font-size: 1.35rem; }
+            .det-price { font-size: 1.6rem; }
+        }
+        @@media (max-width: 480px) {
+            .cat-header { padding: 0 1rem; }
+            .det-specs { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="cat-header">
+    <a href="/Catalogo/IndexCliente" class="cat-brand">
+        <div class="cat-brand-icon">A</div>
+        <span class="cat-brand-name">A<span>&amp;J</span> Autos</span>
+    </a>
+    <div class="header-actions">
+        <a href="/Catalogo/IndexCliente" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Volver al catálogo
+        </a>
+        <a href="/MisCitas" class="btn-mis-citas">
+            <i class="fa-solid fa-calendar-check"></i> Mis Citas
+        </a>
+        <a href="/Auth/Logout" class="btn-salir">
+            <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </a>
+    </div>
+</header>
+
+<!-- DETALLE -->
+<div class="det-page">
+    <div class="row g-4">
+
+        <!-- Galería -->
+        <div class="col-lg-7">
+            <div class="det-gallery">
+                <div class="gallery-main" id="galleryMain">
+                    @if (!string.IsNullOrEmpty(primeraFoto))
+                    {
+                        <img id="mainImg" src="@primeraFoto" alt="@Model.Marca @Model.Modelo" />
+                    }
+                    else
+                    {
+                        <div class="gallery-no-photo">
+                            <i class="fa-solid fa-car"></i>
+                            <span style="color:var(--pa-muted);font-size:.85rem;">Sin fotos disponibles</span>
+                        </div>
+                    }
+                    <button class="gallery-btn prev @(tieneFotos && Model.Fotos.Count > 1 ? "" : "hidden")" onclick="cambiarFoto(-1)">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="gallery-btn next @(tieneFotos && Model.Fotos.Count > 1 ? "" : "hidden")" onclick="cambiarFoto(1)">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    @if (tieneFotos && Model.Fotos.Count > 1)
+                    {
+                        <div class="gallery-counter" id="galCounter">1 / @Model.Fotos.Count</div>
+                    }
+                </div>
+                @if (tieneFotos && Model.Fotos.Count > 1)
+                {
+                    <div class="gallery-thumbs" id="galleryThumbs">
+                        @for (int i = 0; i < Model.Fotos.Count; i++)
+                        {
+                            <div class="thumb @(i == 0 ? "active" : "")" onclick="irFoto(@i)">
+                                <img src="@Model.Fotos[i].URL" alt="Foto @(i+1)" loading="lazy" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Info panel -->
+        <div class="col-lg-5">
+            <div class="det-info">
+                <div class="det-badge-row">
+                    @if (!string.IsNullOrEmpty(Model.Condicion))
+                    {
+                        <span class="det-badge @(Model.Condicion.ToLower() == "nuevo" ? "nuevo" : "")">
+                            <i class="fa-solid fa-circle-dot"></i> @Model.Condicion
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Tipo))
+                    {
+                        <span class="det-badge accent">
+                            <i class="fa-solid fa-car-side"></i> @Model.Tipo
+                        </span>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Estado))
+                    {
+                        <span class="det-badge">
+                            <i class="fa-solid fa-tag"></i> @Model.Estado
+                        </span>
+                    }
+                </div>
+
+                <h1 class="det-title">
+                    @Model.Marca @Model.Modelo
+                    <span class="det-anio">@Model.Anio</span>
+                </h1>
+                <div class="det-price">@fmtGs(Model.PrecioVenta)<small>Gs.</small></div>
+
+                <hr class="det-divider" />
+
+                <div class="det-specs">
+                    @if (Model.Kilometraje.HasValue)
+                    {
+                        <div class="spec-item">
+                            <div class="spec-icon"><i class="fa-solid fa-gauge-high"></i></div>
+                            <div><p class="spec-label">Kilometraje</p><p class="spec-value">@fmtKm(Model.Kilometraje.Value)</p></div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Color))
+                    {
+                        <div class="spec-item">
+                            <div class="spec-icon"><i class="fa-solid fa-palette"></i></div>
+                            <div><p class="spec-label">Color</p><p class="spec-value">@Model.Color</p></div>
+                        </div>
+                    }
+                    <div class="spec-item">
+                        <div class="spec-icon"><i class="fa-solid fa-calendar"></i></div>
+                        <div><p class="spec-label">Año</p><p class="spec-value">@Model.Anio</p></div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Marca))
+                    {
+                        <div class="spec-item">
+                            <div class="spec-icon"><i class="fa-solid fa-industry"></i></div>
+                            <div><p class="spec-label">Marca</p><p class="spec-value">@Model.Marca</p></div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Modelo))
+                    {
+                        <div class="spec-item">
+                            <div class="spec-icon"><i class="fa-solid fa-car"></i></div>
+                            <div><p class="spec-label">Modelo</p><p class="spec-value">@Model.Modelo</p></div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Condicion))
+                    {
+                        <div class="spec-item">
+                            <div class="spec-icon"><i class="fa-solid fa-star"></i></div>
+                            <div><p class="spec-label">Condición</p><p class="spec-value">@Model.Condicion</p></div>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Descripcion))
+                {
+                    <div class="det-desc">
+                        <p class="det-desc-title"><i class="fa-solid fa-circle-info me-1"></i>Descripción</p>
+                        @Model.Descripcion
+                    </div>
+                }
+
+                <div class="det-cta">
+                    <a href="/MisCitas/Crear?vehiculoId=@Model.VehiculoId&vehiculoInfo=@Uri.EscapeDataString(vehiculoInfo)" class="btn-cta-primary">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        Agendar una cita
+                    </a>
+                    <a href="/Catalogo/IndexCliente" class="btn-cta-secondary">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        Ver más vehículos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const FOTOS = @fotosJson;
+    let fotoActual = 0;
+
+    function irFoto(idx) {
+        if (!FOTOS || FOTOS.length === 0) return;
+        fotoActual = idx;
+        const img = document.getElementById('mainImg');
+        if (img) {
+            img.style.opacity = '0';
+            setTimeout(() => { img.src = FOTOS[fotoActual].url; img.style.opacity = '1'; }, 120);
+        }
+        const counter = document.getElementById('galCounter');
+        if (counter) counter.textContent = `${fotoActual + 1} / ${FOTOS.length}`;
+        document.querySelectorAll('.thumb').forEach((t, i) => t.classList.toggle('active', i === fotoActual));
+        const thumbs = document.getElementById('galleryThumbs');
+        if (thumbs) {
+            const thumb = thumbs.children[fotoActual];
+            if (thumb) thumb.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+        }
+    }
+
+    function cambiarFoto(dir) {
+        if (!FOTOS || FOTOS.length === 0) return;
+        fotoActual = (fotoActual + dir + FOTOS.length) % FOTOS.length;
+        irFoto(fotoActual);
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'ArrowLeft')  cambiarFoto(-1);
+        if (e.key === 'ArrowRight') cambiarFoto(1);
+    });
+</script>
+</body>
+</html>

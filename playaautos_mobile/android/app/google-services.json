@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "570824482478",
+    "project_id": "playaautos-a49a0",
+    "storage_bucket": "playaautos-a49a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:570824482478:android:fee67c6ba4df9a72c6d73f",
+        "android_client_info": {
+          "package_name": "com.example.playaautos_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgesiFADUNzjkjvzzX-5MHhSLAaXijfOA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

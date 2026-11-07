@@ -1,0 +1,387 @@
+@model PlayaAutos.Web.Models.AgendarCitaViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Agendar Cita";
+    var minFecha = DateTime.Now.AddMinutes(30).ToString("yyyy-MM-ddTHH:mm");
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agendar Cita — A&amp;J Autos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        body { margin: 0; }
+
+        .mc-header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--pa-surface); border-bottom: 1px solid var(--pa-border);
+            box-shadow: 0 2px 16px rgba(0,0,0,.4);
+            padding: 0 2rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .cat-brand { display: flex; align-items: center; gap: .6rem; text-decoration: none; }
+        .cat-brand-icon {
+            width: 36px; height: 36px; border-radius: 9px;
+            background: var(--pa-accent); display: flex; align-items: center;
+            justify-content: center; color: #fff; font-weight: 800; font-size: .95rem;
+        }
+        .cat-brand-name { font-size: 1.15rem; font-weight: 800; color: var(--pa-text); letter-spacing: -.3px; }
+        .cat-brand-name span { color: var(--pa-accent); }
+        .header-actions { display: flex; align-items: center; gap: .75rem; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 8px; padding: .42rem .9rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .83rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-back:hover { border-color: var(--pa-text); color: var(--pa-text); }
+        .btn-salir {
+            display: inline-flex; align-items: center; gap: .4rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .45rem .9rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .83rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-salir:hover { border-color: var(--pa-muted); color: var(--pa-text); }
+
+        .form-page { max-width: 680px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+
+        .form-title { margin-bottom: 1.75rem; }
+        .form-title h1 { font-size: 1.6rem; font-weight: 800; color: var(--pa-text); margin: 0 0 .3rem; }
+        .form-title p { font-size: .88rem; color: var(--pa-muted); margin: 0; }
+
+        .form-card {
+            background: var(--pa-surface); border: 1px solid var(--pa-border);
+            border-radius: 16px; overflow: hidden;
+        }
+        .form-section {
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--pa-border);
+        }
+        .form-section:last-child { border-bottom: none; }
+        .section-title {
+            font-size: .72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .08em; color: var(--pa-muted); margin: 0 0 1rem;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .section-title i { color: var(--pa-accent); font-size: .75rem; }
+
+        /* Form controls */
+        .form-label-pa {
+            font-size: .78rem; font-weight: 600; color: var(--pa-text);
+            margin-bottom: .35rem; display: block;
+        }
+        .form-label-pa .req { color: var(--pa-accent); }
+        .form-control-pa {
+            width: 100%; background: var(--pa-surface2); border: 1px solid var(--pa-border);
+            border-radius: 9px; padding: .6rem .9rem; color: var(--pa-text);
+            font-family: inherit; font-size: .88rem; outline: none; transition: border-color .2s;
+        }
+        .form-control-pa:focus { border-color: var(--pa-accent); }
+        .form-control-pa::placeholder { color: var(--pa-muted); }
+        .form-control-pa:read-only { opacity: .6; cursor: not-allowed; }
+
+        select.form-control-pa {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right .85rem center;
+            background-color: var(--pa-surface2);
+        }
+        select.form-control-pa option { background: #1a1a2e; }
+
+        textarea.form-control-pa { resize: vertical; min-height: 80px; }
+
+        .field-note { font-size: .73rem; color: var(--pa-muted); margin-top: .3rem; }
+        .field-error { font-size: .73rem; color: var(--pa-accent); margin-top: .3rem; }
+
+        .vehiculo-chip {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: rgba(233,69,96,.1); border: 1px solid rgba(233,69,96,.3);
+            border-radius: 8px; padding: .5rem .9rem;
+            font-size: .85rem; color: var(--pa-accent); font-weight: 600;
+        }
+
+        .form-actions {
+            padding: 1.25rem 1.5rem;
+            display: flex; gap: .75rem; flex-wrap: wrap;
+        }
+        .btn-submit {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: var(--pa-accent); color: #fff;
+            border: none; border-radius: 10px; padding: .75rem 1.75rem;
+            font-family: inherit; font-size: .95rem; font-weight: 700;
+            cursor: pointer; transition: background .2s;
+        }
+        .btn-submit:hover { background: var(--pa-accent-h); }
+        .btn-cancel-form {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: transparent; border: 1px solid var(--pa-border);
+            border-radius: 10px; padding: .75rem 1.25rem;
+            color: var(--pa-muted); font-family: inherit; font-size: .9rem;
+            cursor: pointer; transition: all .2s; text-decoration: none;
+        }
+        .btn-cancel-form:hover { border-color: var(--pa-text); color: var(--pa-text); }
+
+        .info-box {
+            background: rgba(233,69,96,.07); border: 1px solid rgba(233,69,96,.2);
+            border-radius: 10px; padding: .85rem 1rem;
+            font-size: .8rem; color: var(--pa-muted); line-height: 1.55; margin-bottom: 1.5rem;
+        }
+        .info-box i { color: var(--pa-accent); }
+
+        .val-summary {
+            background: rgba(233,69,96,.08); border: 1px solid rgba(233,69,96,.25);
+            border-radius: 10px; padding: .85rem 1rem; margin-bottom: 1.25rem;
+            font-size: .82rem; color: var(--pa-accent);
+        }
+        .val-summary ul { margin: .35rem 0 0 1rem; padding: 0; }
+
+        @@media (max-width: 576px) {
+            .form-page { padding: 1.25rem 1rem; }
+            .mc-header { padding: 0 1rem; }
+            .form-section { padding: 1rem; }
+            .form-actions { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="mc-header">
+    <a href="/Catalogo/IndexCliente" class="cat-brand">
+        <div class="cat-brand-icon">A</div>
+        <span class="cat-brand-name">A<span>&amp;J</span> Autos</span>
+    </a>
+    <div class="header-actions">
+        <a href="/MisCitas" class="btn-back">
+            <i class="fa-solid fa-arrow-left"></i> Mis Citas
+        </a>
+        <a href="/Auth/Logout" class="btn-salir">
+            <i class="fa-solid fa-right-from-bracket"></i> Salir
+        </a>
+    </div>
+</header>
+
+<!-- CONTENIDO -->
+<div class="form-page">
+
+    <div class="form-title">
+        <h1><i class="fa-solid fa-calendar-plus me-2" style="color:var(--pa-accent);"></i>Agendar cita</h1>
+        <p>Completá el formulario para solicitar una cita. Nos pondremos en contacto a la brevedad.</p>
+    </div>
+
+    @if (string.IsNullOrEmpty(Model.CI_RUC))
+    {
+        <div class="info-box">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Es tu primera vez agendando una cita. Completá tus datos — se guardarán en tu perfil para la próxima vez.
+        </div>
+    }
+    else
+    {
+        <div class="info-box">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Tus datos personales se cargaron de tu perfil. Podés editarlos antes de confirmar —
+            si cambiás algo, actualizaremos tu información en el sistema.
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="val-summary">
+            <strong><i class="fa-solid fa-triangle-exclamation me-1"></i>Revisá los siguientes campos:</strong>
+            <ul>
+                @foreach (var entry in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@entry.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form asp-controller="MisCitas" asp-action="Crear" method="post">
+        @Html.AntiForgeryToken()
+        @if (Model.VehiculoId.HasValue)
+        {
+            <input type="hidden" asp-for="VehiculoId" />
+        }
+
+        <div class="form-card">
+
+            <!-- Datos personales -->
+            <div class="form-section">
+                <p class="section-title"><i class="fa-solid fa-user"></i>Tus datos</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label-pa" for="Nombre">Nombre completo <span class="req">*</span></label>
+                        <input asp-for="Nombre" class="form-control-pa" id="Nombre" placeholder="Tu nombre y apellido" />
+                        <span asp-validation-for="Nombre" class="field-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-pa" for="CI_RUC">
+                            CI / RUC
+                            @if (string.IsNullOrEmpty(Model.CI_RUC)) { <span class="req">*</span> }
+                        </label>
+                        @if (string.IsNullOrEmpty(Model.CI_RUC))
+                        {
+                            <input asp-for="CI_RUC" class="form-control-pa" id="CI_RUC" placeholder="Ej: 12345678" />
+                            <p class="field-note">Solo se registra una vez y no podrá cambiarse después.</p>
+                        }
+                        else
+                        {
+                            <input asp-for="CI_RUC" class="form-control-pa" id="CI_RUC" readonly />
+                            <p class="field-note">El CI no es editable una vez registrado.</p>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-pa" for="Telefono">Teléfono <span class="req">*</span></label>
+                        <input asp-for="Telefono" class="form-control-pa" id="Telefono" placeholder="Ej: 0981 123 456" />
+                        <span asp-validation-for="Telefono" class="field-error"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-pa" for="Direccion">Dirección <span class="req">*</span></label>
+                        <input asp-for="Direccion" class="form-control-pa" id="Direccion" placeholder="Tu dirección" />
+                        <span asp-validation-for="Direccion" class="field-error"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles de la cita -->
+            <div class="form-section">
+                <p class="section-title"><i class="fa-solid fa-calendar"></i>Detalles de la cita</p>
+                <div class="row g-3">
+
+                    @if (Model.VehiculoId.HasValue && !string.IsNullOrEmpty(Model.VehiculoInfo))
+                    {
+                        <div class="col-12">
+                            <label class="form-label-pa">Vehículo de interés</label>
+                            <div>
+                                <span class="vehiculo-chip">
+                                    <i class="fa-solid fa-car"></i>@Model.VehiculoInfo
+                                </span>
+                            </div>
+                        </div>
+                    }
+                    else if (Model.VehiculoId.HasValue)
+                    {
+                        <div class="col-12">
+                            <label class="form-label-pa">Vehículo de interés</label>
+                            <div>
+                                <span class="vehiculo-chip">
+                                    <i class="fa-solid fa-car"></i>Vehículo #@Model.VehiculoId
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="col-md-7">
+                        <label class="form-label-pa" for="FechaHora">Fecha y hora <span class="req">*</span></label>
+                        <input type="datetime-local" id="FechaHora" name="FechaHora" class="form-control-pa"
+                               value="@(Model.FechaHora > DateTime.MinValue ? Model.FechaHora.ToString("yyyy-MM-ddTHH:mm") : "")"
+                               min="@minFecha" />
+                        <span asp-validation-for="FechaHora" class="field-error"></span>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label-pa" for="TipoCita">Tipo de cita <span class="req">*</span></label>
+                        <select asp-for="TipoCita" class="form-control-pa" id="TipoCita">
+                            <option value="Consulta">Consulta</option>
+                            <option value="Visita">Visita</option>
+                            <option value="TestDrive">Test Drive</option>
+                        </select>
+                        <span asp-validation-for="TipoCita" class="field-error"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label-pa" for="Observaciones">Observaciones <span style="color:var(--pa-muted);font-weight:400;">(opcional)</span></label>
+                        <textarea asp-for="Observaciones" class="form-control-pa" id="Observaciones"
+                                  placeholder="Cualquier comentario o pregunta que quieras hacernos..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-calendar-check"></i> Confirmar cita
+                </button>
+                <a href="/MisCitas" class="btn-cancel-form">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+            </div>
+
+        </div>
+            <!-- Toast -->
+            <div id="toastError" style="display:none;position:fixed;top:1rem;right:1rem;background:#1f1a1a;border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:1rem 1.5rem;z-index:2000;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:420px;align-items:center;gap:0.75rem;">
+                <i class="fa-solid fa-triangle-exclamation" style="color:#ef4444;font-size:1.2rem;flex-shrink:0;"></i>
+                <span style="color:#fca5a5;font-weight:500;font-size:0.88rem;" id="msgToast"></span>
+                <button onclick="document.getElementById('toastError').style.display='none'" style="background:none;border:none;color:var(--pa-muted);cursor:pointer;margin-left:auto;flex-shrink:0;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+    </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============ TOAST ============
+        let toastTimer;
+        function mostrarError(msg) {
+        const t = document.getElementById('toastError');
+        document.getElementById('msgToast').textContent = msg;
+        t.style.display = 'flex';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { t.style.display = 'none'; }, 5000);
+        }
+
+        // ============ FERIADOS ============
+        function calcularSemanaSanta(a) {
+        const d = (19 * (a % 19) + 24) % 30;
+        const e = (2 * (a % 4) + 4 * (a % 7) + 6 * d + 5) % 7;
+        const dias = 22 + d + e;
+        const p = dias <= 31 ? new Date(a, 2, dias) : new Date(a, 3, dias - 31);
+        return { js: new Date(p.getFullYear(), p.getMonth(), p.getDate() - 3), vs: new Date(p.getFullYear(), p.getMonth(), p.getDate() - 2) };
+        }
+        function esFeriado(f) {
+        const a = f.getFullYear();
+        const ff = [new Date(a,0,1),new Date(a,2,1),new Date(a,4,1),new Date(a,4,14),new Date(a,4,15),new Date(a,5,12),new Date(a,7,15),new Date(a,8,29),new Date(a,11,8),new Date(a,11,25)];
+        const ss = calcularSemanaSanta(a);
+        ff.push(ss.js, ss.vs);
+        return ff.some(x => x.toDateString() === f.toDateString());
+        }
+        function validarFecha(f) {
+        if (f < new Date()) return 'No se pueden agendar citas en el pasado.';
+        if (f.getDay() === 0) return 'No se agendan citas los domingos.';
+        const h = f.getHours(), m = f.getMinutes();
+        if (h < 8 || h > 18 || (h === 18 && m > 0)) return 'Horario: 08:00 a 18:00 hs.';
+        if (esFeriado(f)) return 'No se agendan citas en días feriados.';
+        return null;
+        }
+
+        const fld = document.getElementById('FechaHora');
+        if (fld) {
+        const pad = n => String(n).padStart(2, '0');
+        const now = new Date(Date.now() + 30 * 60000);
+        fld.min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        if (!fld.value || fld.value < fld.min) {
+        const next = new Date(Date.now() + 60 * 60000);
+        next.setMinutes(0, 0, 0);
+        fld.value = `${next.getFullYear()}-${pad(next.getMonth()+1)}-${pad(next.getDate())}T${pad(next.getHours())}:00`;
+        }
+        fld.addEventListener('change', function() {
+        if (!this.value) return;
+        const error = validarFecha(new Date(this.value));
+        if (error) { mostrarError(error); this.value = ''; }
+        });
+        }
+    </script>
+</body>
+</html>

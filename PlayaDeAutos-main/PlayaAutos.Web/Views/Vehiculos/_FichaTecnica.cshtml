@@ -1,0 +1,49 @@
+@model PlayaAutos.Web.Models.VehiculoViewModel
+@* Ficha técnica: se usa en Crear y Editar. Todos los campos son opcionales;
+   la app la muestra automáticamente al principio de la descripción del vehículo. *@
+<div class="pa-card p-4 mb-3">
+    <div class="section-title mb-3">
+        <i class="fa-solid fa-gears me-1" style="color:var(--pa-accent);"></i>
+        Ficha técnica
+        <span style="font-size:0.75rem;font-weight:400;color:var(--pa-muted);margin-left:0.4rem;">(opcional)</span>
+    </div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="Transmision" class="pa-label">Transmisión</label>
+            <select asp-for="Transmision" asp-items="Model.Transmisiones" class="pa-input">
+                <option value="">— Sin especificar —</option>
+            </select>
+            <span asp-validation-for="Transmision" class="val-msg"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Combustible" class="pa-label">Combustible</label>
+            <select asp-for="Combustible" asp-items="Model.Combustibles" class="pa-input">
+                <option value="">— Sin especificar —</option>
+            </select>
+            <span asp-validation-for="Combustible" class="val-msg"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Traccion" class="pa-label">Tracción</label>
+            <select asp-for="Traccion" asp-items="Model.Tracciones" class="pa-input">
+                <option value="">— Sin especificar —</option>
+            </select>
+            <span asp-validation-for="Traccion" class="val-msg"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="CantidadPuertas" class="pa-label">Cantidad de puertas</label>
+            <select asp-for="CantidadPuertas" class="pa-input">
+                <option value="">— Sin especificar —</option>
+                @for (var p = 2; p <= 5; p++)
+                {
+                    <option value="@p" selected="@(Model.CantidadPuertas == p)">@p puertas</option>
+                }
+            </select>
+            <span asp-validation-for="CantidadPuertas" class="val-msg"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="Motor" class="pa-label">Motor</label>
+            <input asp-for="Motor" class="pa-input" maxlength="30" placeholder="Ej: 1.8, 2.0 Turbo, 3.0 V6" />
+            <span asp-validation-for="Motor" class="val-msg"></span>
+        </div>
+    </div>
+</div>

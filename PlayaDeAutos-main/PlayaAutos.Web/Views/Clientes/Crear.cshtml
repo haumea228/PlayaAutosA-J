@@ -1,0 +1,188 @@
+﻿@model PlayaAutos.Web.Models.ClienteViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Registrar Cliente";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Registrar Cliente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <!-- Header -->
+        <div class="pa-page-header d-flex align-items-center gap-3">
+            <a href="/Clientes" class="action-btn" style="flex-shrink:0;" title="Volver">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h4><i class="fa-solid fa-user-plus me-2" style="color:var(--pa-accent);"></i>Registrar Cliente</h4>
+                <p>Complete todos los campos obligatorios marcados con *</p>
+            </div>
+        </div>
+
+        <!-- Errores globales -->
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                <strong>Corrija los errores antes de continuar.</strong>
+            </div>
+        }
+
+        <form asp-action="Crear" method="post" id="formCrear" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+
+                    <!-- Información del Cliente -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-id-card me-1" style="color:var(--pa-accent);"></i>
+                            Información del Cliente
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Nombre" class="pa-label">Nombre Completo *</label>
+                                <input asp-for="Nombre" class="pa-input" placeholder="Ej: Juan Pérez" autofocus />
+                                <span asp-validation-for="Nombre" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CI_RUC" class="pa-label">CI / RUC *</label>
+                                <input asp-for="CI_RUC" class="pa-input" placeholder="Ej: 1234567890" />
+                                <span asp-validation-for="CI_RUC" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de Contacto -->
+                    <div class="pa-card p-4 mb-3">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-address-book me-1" style="color:var(--pa-accent);"></i>
+                            Información de Contacto
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="Telefono" class="pa-label">Teléfono</label>
+                                <input asp-for="Telefono" class="pa-input" placeholder="Ej: 0991234567" />
+                                <span asp-validation-for="Telefono" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="pa-label">Email</label>
+                                <input asp-for="Email" class="pa-input" placeholder="ejemplo@correo.com" type="email" />
+                                <span asp-validation-for="Email" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label asp-for="Direccion" class="pa-label">Dirección</label>
+                                <input asp-for="Direccion" class="pa-input" placeholder="Ej: Av. Principal 123" />
+                                <span asp-validation-for="Direccion" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rango de Precios de Interés -->
+                    <div class="pa-card p-4">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-dollar-sign me-1" style="color:var(--pa-accent);"></i>
+                            Rango de Precios de Interés
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="RangoPrecioMin" class="pa-label">Precio Mínimo (Gs.)</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="RangoPrecioMin" type="number" class="pa-input" placeholder="0" min="0"
+                                           style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="RangoPrecioMin" class="val-msg"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="RangoPrecioMax" class="pa-label">Precio Máximo (Gs.)</label>
+                                <div class="input-wrapper">
+                                    <input asp-for="RangoPrecioMax" type="number" class="pa-input" placeholder="0" min="0"
+                                           style="padding-left:2.8rem !important;" />
+                                    <span class="input-icon" style="font-size:0.75rem;font-weight:700;color:var(--pa-muted);">Gs.</span>
+                                </div>
+                                <span asp-validation-for="RangoPrecioMax" class="val-msg"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna derecha - Info adicional -->
+                <div class="col-lg-4">
+                    <div class="pa-card p-4" style="position:sticky;top:1rem;">
+                        <div class="section-title mb-3">
+                            <i class="fa-solid fa-circle-info me-1" style="color:var(--pa-accent);"></i>
+                            Información
+                        </div>
+                        <div style="font-size:0.85rem;color:var(--pa-muted);">
+                            <p><i class="fa-solid fa-check-circle me-2" style="color:var(--pa-success);"></i>Los campos marcados con * son obligatorios.</p>
+                            <p><i class="fa-solid fa-id-card me-2" style="color:var(--pa-info);"></i>El CI/RUC debe ser único para cada cliente.</p>
+                            <p><i class="fa-solid fa-dollar-sign me-2" style="color:var(--pa-warning);"></i>El precio máximo debe ser mayor al mínimo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="d-flex gap-3 justify-content-end mt-4 pb-3">
+                <a href="/Clientes" class="btn-pa-ghost">
+                    <i class="fa-solid fa-xmark"></i> Cancelar
+                </a>
+                <button type="submit" class="btn-pa-primary" id="btnGuardar">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar cliente
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .val-msg { font-size: 0.78rem; color: #f87191; margin-top: 3px; display: block; }
+    .pa-input.input-error { border-color: var(--pa-accent) !important; }
+    select, select:focus, select:focus-visible, select:active, select:hover {
+        outline: none !important;
+        outline-style: none !important;
+        outline-color: transparent !important;
+        outline-width: 0 !important;
+        -webkit-focus-ring-color: transparent !important;
+        box-shadow: none !important;
+        border-color: var(--pa-border) !important;
+    }
+    .action-btn {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        color: var(--pa-muted);
+        text-decoration: none;
+        transition: background var(--ease);
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.06); color: var(--pa-text); }
+</style>
+
+<script>
+    document.getElementById('formCrear').addEventListener('submit', () => {
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,326 @@
+﻿@model PlayaAutos.Web.Models.PendientesViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Pendientes";
+    var tabCuotas = Model.Tab == "cuotas";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Pendientes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="pa-app">
+        @await Html.PartialAsync("_Sidebar")
+        <div class="pa-content">
+
+            <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4><i class="fa-solid fa-clock me-2" style="color:#ca8a04;"></i>Pendientes</h4>
+                    <p>Operaciones que requieren confirmación de caja</p>
+                </div>
+            </div>
+
+            @if (TempData["Exito"] != null)
+            {
+                <div class="pa-alert success mb-3"><i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]</div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="pa-alert danger mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]</div>
+            }
+
+            <!-- Pestañas -->
+            <div class="pend-tabs mb-3" role="tablist">
+                <a href="/Ventas/Pendientes?tab=ventas" class="pend-tab @(!tabCuotas ? "active" : "")" role="tab">
+                    <i class="fa-solid fa-handshake me-1"></i>Ventas
+                    <span class="pend-count">@Model.Ventas.Count</span>
+                </a>
+                <a href="/Ventas/Pendientes?tab=cuotas" class="pend-tab @(tabCuotas ? "active" : "")" role="tab">
+                    <i class="fa-solid fa-coins me-1"></i>Pagos de cuotas
+                    <span class="pend-count @(Model.PagosCuotas.Any() ? "hot" : "")">@Model.PagosCuotas.Count</span>
+                </a>
+            </div>
+
+            @if (!tabCuotas)
+            {
+                <div class="pa-card" style="overflow:hidden;">
+                    @if (!Model.Ventas.Any())
+                    {
+                        <div style="text-align:center;padding:4rem 2rem;">
+                            <i class="fa-solid fa-check-circle" style="font-size:3rem;color:#22c55e;display:block;margin-bottom:1rem;"></i>
+                            <p style="color:var(--pa-muted);">No hay ventas pendientes de finalización.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="overflow-x:auto;">
+                            <table class="pa-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Cliente</th>
+                                        <th>Vehículo</th>
+                                        <th>Vendedor</th>
+                                        <th>Tipo</th>
+                                        <th>Fecha</th>
+                                        <th>Monto total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in Model.Ventas)
+                                    {
+                                        <tr>
+                                            <td style="font-family:monospace;font-size:0.8rem;">#@v.VentaId</td>
+                                            <td style="font-weight:600;">@v.Cliente</td>
+                                            <td style="font-size:0.88rem;">@v.Vehiculo</td>
+                                            <td style="font-size:0.85rem;color:var(--pa-muted);">@v.Vendedor</td>
+                                            <td>@v.TipoVenta</td>
+                                            <td>@v.FechaVenta.ToString("dd/MM/yyyy")</td>
+                                            <td style="font-weight:600;">Gs. @v.MontoTotal.ToString("N0")</td>
+                                            <td>
+                                                <form method="post" action="/Ventas/Finalizar/@v.VentaId" style="display:inline;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn-pa-primary" style="background:#22c55e;border-color:#22c55e;font-size:0.82rem;padding:0.4rem 0.8rem;"
+                                                            onclick="return confirm('¿Finalizar la venta #@v.VentaId? Se generará factura, nota de crédito y movimiento de caja.')">
+                                                        <i class="fa-solid fa-check me-1"></i> Finalizar
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="pa-card" style="overflow:hidden;">
+                    @if (!Model.PagosCuotas.Any())
+                    {
+                        <div style="text-align:center;padding:4rem 2rem;">
+                            <i class="fa-solid fa-check-circle" style="font-size:3rem;color:#22c55e;display:block;margin-bottom:1rem;"></i>
+                            <p style="color:var(--pa-muted);">No hay pagos de cuotas informados por clientes para revisar.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="overflow-x:auto;">
+                            <table class="pa-table">
+                                <thead>
+                                    <tr>
+                                        <th>Informado</th>
+                                        <th>Cliente</th>
+                                        <th>Vehículo</th>
+                                        <th>Cuota</th>
+                                        <th>Monto</th>
+                                        <th>Recargo</th>
+                                        <th>Total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var p in Model.PagosCuotas)
+                                    {
+                                        <tr>
+                                            <td style="font-size:0.85rem;white-space:nowrap;">@p.FechaReporte.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <div style="font-weight:600;">@p.Cliente</div>
+                                                @if (!string.IsNullOrEmpty(p.ClienteCI))
+                                                {
+                                                    <div style="font-size:0.78rem;color:var(--pa-muted);">CI/RUC @p.ClienteCI</div>
+                                                }
+                                            </td>
+                                            <td style="font-size:0.88rem;">@p.Vehiculo <span style="color:var(--pa-muted);font-size:0.78rem;">· Venta #@p.VentaId</span></td>
+                                            <td style="white-space:nowrap;">
+                                                <div style="font-weight:600;">@p.NumeroCuota / @(p.CantidadCuotas?.ToString() ?? "?")</div>
+                                                <div style="font-size:0.78rem;color:var(--pa-muted);">Vence @p.FechaVencimiento.ToString("dd/MM/yyyy")</div>
+                                            </td>
+                                            <td style="white-space:nowrap;">Gs. @p.Monto.ToString("N0")</td>
+                                            <td style="white-space:nowrap;color:@(p.MontoRecargo > 0 ? "#ef4444" : "var(--pa-muted)");">
+                                                @(p.MontoRecargo > 0 ? "Gs. " + p.MontoRecargo.ToString("N0") : "—")
+                                            </td>
+                                            <td style="font-weight:700;white-space:nowrap;">Gs. @p.Total.ToString("N0")</td>
+                                            <td>
+                                                <button type="button" class="btn-pa-primary" style="font-size:0.82rem;padding:0.4rem 0.8rem;white-space:nowrap;"
+                                                        data-id="@p.SolicitudPagoCuotaId"
+                                                        data-cliente="@p.Cliente"
+                                                        data-vehiculo="@p.Vehiculo"
+                                                        data-cuota="@p.NumeroCuota / @(p.CantidadCuotas?.ToString() ?? "?")"
+                                                        data-fecha="@p.FechaReporte.ToString("dd/MM/yyyy HH:mm")"
+                                                        data-monto="@p.Monto.ToString("N0")"
+                                                        data-recargo="@p.MontoRecargo.ToString("N0")"
+                                                        data-total="@p.Total.ToString("N0")"
+                                                        data-telefono="@p.ClienteTelefono"
+                                                        data-obs="@p.ObservacionCliente"
+                                                        onclick="abrirRevision(this)">
+                                                    <i class="fa-solid fa-magnifying-glass me-1"></i> Revisar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Verificá la transferencia en el banco antes de aprobar. Al aprobar se registra el ingreso en caja con la fecha
+                    en que el cliente informó el pago y se habilita su ticket.
+                </p>
+            }
+        </div>
+    </div>
+
+    <!-- Modal de revisión de pago de cuota -->
+    <div id="modalRevision" class="rev-overlay" onclick="if (event.target === this) cerrarRevision()">
+        <div class="rev-modal pa-card">
+            <div class="d-flex align-items-center justify-content-between p-3" style="border-bottom:1px solid var(--pa-border);">
+                <h5 style="margin:0;font-size:1rem;font-weight:700;">
+                    <i class="fa-solid fa-receipt me-2" style="color:var(--pa-accent);"></i>Revisar pago informado
+                </h5>
+                <button type="button" class="rev-close" onclick="cerrarRevision()" aria-label="Cerrar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="rev-body">
+                <div class="rev-img-wrap">
+                    <a id="revImgLink" href="#" target="_blank" rel="noopener" title="Abrir en tamaño completo">
+                        <img id="revImg" src="" alt="Comprobante de transferencia" />
+                    </a>
+                    <div style="font-size:0.75rem;color:var(--pa-muted);margin-top:0.4rem;text-align:center;">
+                        Clic en la imagen para abrirla en tamaño completo
+                    </div>
+                </div>
+                <div class="rev-info">
+                    <dl class="rev-dl">
+                        <dt>Cliente</dt><dd id="revCliente"></dd>
+                        <dt>Teléfono</dt><dd id="revTelefono"></dd>
+                        <dt>Vehículo</dt><dd id="revVehiculo"></dd>
+                        <dt>Cuota</dt><dd id="revCuota"></dd>
+                        <dt>Informado</dt><dd id="revFecha"></dd>
+                        <dt>Monto</dt><dd>Gs. <span id="revMonto"></span></dd>
+                        <dt>Recargo</dt><dd>Gs. <span id="revRecargo"></span></dd>
+                        <dt>Total a verificar</dt><dd style="font-weight:800;font-size:1.05rem;">Gs. <span id="revTotal"></span></dd>
+                    </dl>
+                    <div id="revObsWrap" style="display:none;margin-bottom:1rem;">
+                        <div class="pa-label">Mensaje del cliente</div>
+                        <div id="revObs" style="font-size:0.88rem;background:rgba(255,255,255,.04);border-radius:8px;padding:0.5rem 0.75rem;"></div>
+                    </div>
+
+                    <form id="formAprobar" method="post">
+                        @Html.AntiForgeryToken()
+                        <label class="pa-label" for="formaPagoId">Forma de pago</label>
+                        <select id="formaPagoId" name="formaPagoId" class="pa-input mb-2" required>
+                            @foreach (var f in Model.FormasPago)
+                            {
+                                <option value="@f.Value" selected="@f.Selected">@f.Text</option>
+                            }
+                        </select>
+                        <label class="pa-label" for="observacion">Observación (opcional)</label>
+                        <input id="observacion" name="observacion" class="pa-input mb-3" maxlength="300"
+                               placeholder="Ej.: verificado en extracto del banco" />
+                        <button type="submit" class="btn-pa-primary w-100" style="background:#22c55e;border-color:#22c55e;"
+                                onclick="return confirm('¿Confirmás que la transferencia fue acreditada? Se registrará el ingreso en caja.')">
+                            <i class="fa-solid fa-check me-1"></i> Aprobar pago
+                        </button>
+                    </form>
+
+                    <div style="border-top:1px solid var(--pa-border);margin:1rem 0;"></div>
+
+                    <form id="formRechazar" method="post">
+                        @Html.AntiForgeryToken()
+                        <label class="pa-label" for="motivo">Motivo del rechazo (lo verá el cliente)</label>
+                        <textarea id="motivo" name="motivo" class="pa-input mb-2" rows="2" maxlength="500" required
+                                  placeholder="Ej.: no se encontró la transferencia / el monto no coincide" style="resize:vertical;"></textarea>
+                        <button type="submit" class="btn-pa-ghost w-100" style="color:#ef4444;border-color:#ef4444;">
+                            <i class="fa-solid fa-xmark me-1"></i> Rechazar pago
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .pend-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; }
+        .pend-tab {
+            display:inline-flex; align-items:center; gap:0.25rem;
+            padding:0.5rem 1rem; border-radius:10px; border:1px solid var(--pa-border);
+            color:var(--pa-muted); text-decoration:none; font-size:0.88rem; font-weight:600;
+        }
+        .pend-tab:hover { color:var(--pa-text); background:rgba(255,255,255,.04); }
+        .pend-tab.active { color:var(--pa-accent); border-color:var(--pa-accent); background:rgba(233,69,96,.1); }
+        .pend-count {
+            margin-left:0.4rem; min-width:1.4rem; padding:0 0.4rem; border-radius:50px;
+            background:rgba(255,255,255,.08); color:var(--pa-text); font-size:0.75rem; text-align:center;
+        }
+        .pend-count.hot { background:#ca8a04; color:#fff; }
+
+        .rev-overlay {
+            display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,.75);
+            align-items:center; justify-content:center; padding:1rem;
+        }
+        .rev-overlay.open { display:flex; }
+        .rev-modal { width:100%; max-width:960px; max-height:92vh; overflow:auto; background:var(--pa-surface); }
+        .rev-close { background:transparent; border:0; color:var(--pa-muted); font-size:1.1rem; }
+        .rev-close:hover { color:var(--pa-text); }
+        .rev-body { display:grid; grid-template-columns: 1.1fr 1fr; gap:1.25rem; padding:1.25rem; }
+        @@media (max-width: 768px) { .rev-body { grid-template-columns: 1fr; } }
+        .rev-img-wrap img {
+            width:100%; max-height:70vh; object-fit:contain; border-radius:8px;
+            background:#000; border:1px solid var(--pa-border);
+        }
+        .rev-dl { display:grid; grid-template-columns:auto 1fr; gap:0.3rem 0.9rem; margin-bottom:1rem; font-size:0.88rem; }
+        .rev-dl dt { color:var(--pa-muted); font-weight:500; }
+        .rev-dl dd { margin:0; }
+    </style>
+
+    <script>
+        function abrirRevision(btn) {
+            const d = btn.dataset;
+            const url = '/Cuotas/ComprobanteSolicitud/' + d.id;
+            document.getElementById('revImg').src = url;
+            document.getElementById('revImgLink').href = url;
+            document.getElementById('revCliente').textContent = d.cliente;
+            document.getElementById('revTelefono').textContent = d.telefono || '—';
+            document.getElementById('revVehiculo').textContent = d.vehiculo;
+            document.getElementById('revCuota').textContent = d.cuota;
+            document.getElementById('revFecha').textContent = d.fecha;
+            document.getElementById('revMonto').textContent = d.monto;
+            document.getElementById('revRecargo').textContent = d.recargo;
+            document.getElementById('revTotal').textContent = d.total;
+
+            const obsWrap = document.getElementById('revObsWrap');
+            obsWrap.style.display = d.obs ? '' : 'none';
+            document.getElementById('revObs').textContent = d.obs || '';
+
+            document.getElementById('formAprobar').action = '/Ventas/AprobarPagoCuota/' + d.id;
+            document.getElementById('formRechazar').action = '/Ventas/RechazarPagoCuota/' + d.id;
+            document.getElementById('motivo').value = '';
+            document.getElementById('observacion').value = '';
+
+            document.getElementById('modalRevision').classList.add('open');
+        }
+
+        function cerrarRevision() {
+            document.getElementById('modalRevision').classList.remove('open');
+            document.getElementById('revImg').src = '';
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarRevision(); });
+    </script>
+</body>
+</html>

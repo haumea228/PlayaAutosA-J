@@ -1,0 +1,369 @@
+﻿@model List<PlayaAutos.Web.Models.CitaListItem>
+@{
+    Layout = null;
+    ViewData["Title"] = "Citas";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PlayaAutos — Citas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+<div class="pa-app">
+
+    @* ✅ CORRECCIÓN: Form oculto para exponer el token CSRF al JavaScript *@
+    <form id="formToken" style="display:none;">
+        @Html.AntiForgeryToken()
+    </form>
+
+    @await Html.PartialAsync("_Sidebar")
+
+    <div class="pa-content">
+
+        <div class="pa-page-header d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h4><i class="fa-solid fa-calendar-check me-2" style="color:var(--pa-accent);"></i>Citas</h4>
+                <p>Agenda de citas y test drives</p>
+            </div>
+            <a href="/Citas/Crear" class="btn-pa-primary">
+                <i class="fa-solid fa-plus"></i> Nueva cita
+            </a>
+        </div>
+
+        @if (TempData["Exito"] != null)
+        {
+            <div class="pa-alert success mb-3">
+                <i class="fa-solid fa-circle-check me-2"></i>@TempData["Exito"]
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pa-alert danger mb-3">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["Error"]
+            </div>
+        }
+
+        <!-- Filtros -->
+        <div class="pa-card p-3 mb-3">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="input-wrapper" style="max-width:320px;flex:1;">
+                    <input type="text" id="buscador" class="pa-input"
+                           placeholder="Buscar por cliente, vehículo, vendedor..." />
+                    <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                </div>
+                <select id="filtroEstado" class="pa-input" style="max-width:180px;">
+                    <option value="">Todos los estados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Confirmada">Confirmada</option>
+                    <option value="Realizada">Realizada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+                <select id="filtroTipo" class="pa-input" style="max-width:160px;">
+                    <option value="">Todos los tipos</option>
+                    <option value="Visita">Visita</option>
+                    <option value="TestDrive">Test Drive</option>
+                    <option value="Consulta">Consulta</option>
+                </select>
+                <input type="date" id="filtroFecha" class="pa-input" style="max-width:180px;" />
+            </div>
+        </div>
+
+        <!-- Vista desktop -->
+        <div class="d-none d-md-block">
+            <div class="pa-card" style="overflow:hidden;">
+                @if (!Model.Any())
+                {
+                    <div style="text-align:center;padding:4rem 2rem;">
+                        <i class="fa-solid fa-calendar-xmark" style="font-size:3rem;color:var(--pa-border);display:block;margin-bottom:1rem;"></i>
+                        <p style="color:var(--pa-muted);margin:0;">No hay citas registradas.</p>
+                        <a href="/Citas/Crear" class="btn-pa-primary mt-3 d-inline-flex">
+                            <i class="fa-solid fa-plus"></i> Agendar primera cita
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div style="overflow-x:auto;">
+                        <table class="pa-table" id="tablaCitas">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Vehículo</th>
+                                    <th>Vendedor</th>
+                                    <th>Fecha y Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in Model)
+                                {
+                                    <tr data-estado="@c.Estado" data-tipo="@c.TipoCita" data-fecha="@c.FechaHora.ToString("yyyy-MM-dd")">
+                                        <td style="font-weight:600;">@c.Cliente</td>
+                                        <td style="font-size:0.85rem;">
+                                            @if (!string.IsNullOrEmpty(c.Vehiculo))
+                                            {
+                                                @c.Vehiculo
+                                            }
+                                            else
+                                            {
+                                                <span style="color:var(--pa-muted);">Sin vehículo</span>
+                                            }
+                                        </td>
+                                        <td style="font-size:0.85rem;color:var(--pa-muted);">@c.Vendedor</td>
+                                        <td>
+                                            <div style="font-weight:600;">@c.FechaHora.ToString("dd/MM/yyyy")</div>
+                                            <div style="font-size:0.8rem;color:var(--pa-muted);">@c.FechaHora.ToString("HH:mm") hs</div>
+                                        </td>
+                                        <td>
+                                            @if (c.TipoCita == "TestDrive")
+                                            {
+                                                <span style="font-size:0.82rem;background:rgba(59,130,246,.12);color:var(--pa-info);padding:2px 8px;border-radius:4px;">
+                                                    <i class="fa-solid fa-car me-1"></i>Test Drive
+                                                </span>
+                                            }
+                                            else if (c.TipoCita == "Visita")
+                                            {
+                                                <span style="font-size:0.82rem;background:rgba(168,85,247,.12);color:#a855f7;padding:2px 8px;border-radius:4px;">
+                                                    <i class="fa-solid fa-eye me-1"></i>Visita
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span style="font-size:0.82rem;background:rgba(107,114,128,.12);color:#6b7280;padding:2px 8px;border-radius:4px;">
+                                                    <i class="fa-solid fa-comments me-1"></i>Consulta
+                                                </span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="estado-badge" style="background:@(c.EstadoColor ?? "rgba(107,114,128,.12)");">
+                                                @c.Estado
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <a href="/Citas/Editar/@c.CitaId" class="action-btn edit" title="Editar">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </a>
+                                                @if (c.Estado == "Pendiente")
+                                                {
+                                                    <button type="button" class="action-btn confirmar"
+                                                            onclick="cambiarEstado(@c.CitaId, 'Confirmada')"
+                                                            title="Confirmar">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </button>
+                                                }
+                                                @if (c.Estado == "Confirmada")
+                                                {
+                                                    <button type="button" class="action-btn realizar"
+                                                            onclick="cambiarEstado(@c.CitaId, 'Realizada')"
+                                                            title="Marcar como realizada">
+                                                        <i class="fa-solid fa-flag-checkered"></i>
+                                                    </button>
+                                                }
+                                                @if (c.Estado != "Cancelada" && c.Estado != "Realizada")
+                                                {
+                                                    <button type="button" class="action-btn delete"
+                                                            onclick="confirmarCancelar(@c.CitaId, '@c.Cliente.Replace("'","\\'")')"
+                                                            title="Cancelar">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Vista móvil -->
+        <div class="d-md-none">
+            @foreach (var c in Model)
+            {
+                <div class="pa-card p-3 mb-2 cita-card" data-estado="@c.Estado" data-tipo="@c.TipoCita" data-fecha="@c.FechaHora.ToString("yyyy-MM-dd")">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div style="font-weight:600;">@c.Cliente</div>
+                            <div style="font-size:0.8rem;color:var(--pa-muted);">@c.Vendedor</div>
+                        </div>
+                        <span class="estado-badge" style="background:@(c.EstadoColor ?? "rgba(107,114,128,.12)");">
+                            @c.Estado
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(c.Vehiculo))
+                    {
+                        <div style="font-size:0.85rem;margin-bottom:0.5rem;">
+                            <i class="fa-solid fa-car me-1" style="color:var(--pa-muted);"></i>@c.Vehiculo
+                        </div>
+                    }
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div style="font-weight:600;">@c.FechaHora.ToString("dd/MM/yyyy HH:mm")</div>
+                            <div style="font-size:0.8rem;color:var(--pa-muted);">@c.TipoCita</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="/Citas/Editar/@c.CitaId" class="action-btn edit">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            @if (c.Estado == "Pendiente")
+                            {
+                                <button type="button" class="action-btn confirmar"
+                                        onclick="cambiarEstado(@c.CitaId, 'Confirmada')"
+                                        title="Confirmar">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                            }
+                            @if (c.Estado == "Confirmada")
+                            {
+                                <button type="button" class="action-btn realizar"
+                                        onclick="cambiarEstado(@c.CitaId, 'Realizada')"
+                                        title="Marcar como realizada">
+                                    <i class="fa-solid fa-flag-checkered"></i>
+                                </button>
+                            }
+                            @if (c.Estado != "Cancelada" && c.Estado != "Realizada")
+                            {
+                                <button class="action-btn delete"
+                                        onclick="confirmarCancelar(@c.CitaId, '@c.Cliente.Replace("'","\\'")')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.Any())
+        {
+            <p style="font-size:0.8rem;color:var(--pa-muted);margin-top:0.75rem;text-align:right;">
+                <span id="totalVisible">@Model.Count</span> cita(s)
+            </p>
+        }
+    </div>
+</div>
+
+<style>
+    .estado-badge {
+        display: inline-block;
+        padding: 0.2em 0.65em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 50px;
+        white-space: nowrap;
+    }
+    .action-btn {
+        width: 32px; height: 32px;
+        border-radius: 7px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        border: 1px solid var(--pa-border);
+        background: transparent;
+        cursor: pointer;
+        transition: background var(--ease), border-color var(--ease);
+        color: var(--pa-muted);
+        text-decoration: none;
+    }
+    .action-btn.edit:hover    { background: rgba(59,130,246,.12); border-color: var(--pa-info); color: var(--pa-info); }
+    .action-btn.confirmar:hover { background: rgba(34,197,94,.12); border-color: #22c55e; color: #22c55e; }
+    .action-btn.realizar:hover  { background: rgba(59,130,246,.12); border-color: var(--pa-info); color: var(--pa-info); }
+    .action-btn.delete:hover  { background: rgba(239,68,68,.12); border-color: #ef4444; color: #ef4444; }
+</style>
+
+<script>
+    // ── Filtros ─────────────────────────────────────────────────────────
+    function filtrar() {
+        const q      = document.getElementById('buscador').value.toLowerCase();
+        const estado = document.getElementById('filtroEstado').value;
+        const tipo   = document.getElementById('filtroTipo').value;
+        const fecha  = document.getElementById('filtroFecha').value;
+
+        const filas = document.querySelectorAll('#tablaCitas tbody tr, .cita-card');
+        let visibles = 0;
+
+        filas.forEach(el => {
+            const textoOk  = !q      || el.textContent.toLowerCase().includes(q);
+            const estadoOk = !estado || el.dataset.estado === estado;
+            const tipoOk   = !tipo   || el.dataset.tipo   === tipo;
+            const fechaOk  = !fecha  || el.dataset.fecha  === fecha;
+            const mostrar  = textoOk && estadoOk && tipoOk && fechaOk;
+
+            el.style.display = mostrar ? '' : 'none';
+            if (mostrar) visibles++;
+        });
+
+        const totalEl = document.getElementById('totalVisible');
+        if (totalEl) totalEl.textContent = visibles;
+    }
+
+    document.getElementById('buscador').addEventListener('input', filtrar);
+    document.getElementById('filtroEstado').addEventListener('change', filtrar);
+    document.getElementById('filtroTipo').addEventListener('change', filtrar);
+    document.getElementById('filtroFecha').addEventListener('change', filtrar);
+
+    // ── Cambiar estado ──────────────────────────────────────────────────
+    // ✅ CORRECCIÓN: lee el token del formToken oculto que sí existe en el DOM
+    function cambiarEstado(citaId, estado) {
+        const estadosMap = {
+            'Confirmada': 2,
+            'Realizada':  3,
+            'Cancelada':  4
+        };
+
+        const estadoCitaId = estadosMap[estado] ?? 0;
+        if (estadoCitaId === 0) { alert('Estado no válido'); return; }
+
+        // ✅ Leer token del formToken oculto
+        const tokenInput = document.querySelector('#formToken input[name="__RequestVerificationToken"]');
+        if (!tokenInput) {
+            alert('No se encontró el token de seguridad. Recargue la página.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/Citas/CambiarEstado';
+
+        const tokenField = document.createElement('input');
+        tokenField.type  = 'hidden';
+        tokenField.name  = '__RequestVerificationToken';
+        tokenField.value = tokenInput.value;
+        form.appendChild(tokenField);
+
+        const idField = document.createElement('input');
+        idField.type  = 'hidden';
+        idField.name  = 'id';
+        idField.value = citaId;
+        form.appendChild(idField);
+
+        const estadoField = document.createElement('input');
+        estadoField.type  = 'hidden';
+        estadoField.name  = 'estadoCitaId';
+        estadoField.value = estadoCitaId;
+        form.appendChild(estadoField);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function confirmarCancelar(id, cliente) {
+        if (confirm('¿Está seguro que desea cancelar la cita de "' + cliente + '"?')) {
+            cambiarEstado(id, 'Cancelada');
+        }
+    }
+</script>
+</body>
+</html>
