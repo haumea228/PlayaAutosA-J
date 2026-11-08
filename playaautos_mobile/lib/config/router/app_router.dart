@@ -71,6 +71,16 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        // Perfil abierto desde otra pantalla (p. ej. "Editar en Perfil" al
+        // agendar una cita). Va en el navegador raíz, fuera del ShellRoute:
+        // hacer push de '/perfil' desde una ruta raíz duplicaba el shell (y su
+        // GlobalKey) y la app se caía. Con la flecha de volver se regresa a
+        // la pantalla anterior sin perder lo que se estaba cargando.
+        path: '/editar-perfil',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const PerfilScreen(),
+      ),
+      GoRoute(
         path: '/pagar-cuota/:cuotaId',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => PagoCuotaScreen(

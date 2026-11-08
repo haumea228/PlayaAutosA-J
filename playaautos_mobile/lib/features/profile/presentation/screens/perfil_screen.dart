@@ -6,9 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../config/theme/app_theme.dart';
+import '../../../../core/config/contacto.dart';
 import '../../../../core/services/camera_service.dart';
 import '../../../../core/services/gps_service.dart';
+import '../../../../shared/utils/validators.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../data/models/cliente_model.dart';
 import '../providers/perfil_provider.dart';
 
 class PerfilScreen extends ConsumerStatefulWidget {
@@ -107,20 +110,83 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
     );
   }
 
-  void _guardar() {
+  Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
     final actual = ref.read(perfilProvider).valueOrNull;
     if (actual == null) return;
+
+    // El CI/RUC se carga una única vez: si el cliente lo está cargando
+    // ahora, se le pide que lo revise antes de guardarlo.
+    String? ciNuevo;
+    if (!actual.tieneCiRuc) {
+      final ci = Validators.normalizarCiRuc(_ciRucController.text);
+      if (ci.isNotEmpty) {
+        final confirmar = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirmá tu CI / RUC'),
+            content: Text(
+              'Vas a registrar el CI/RUC $ci.\n\n'
+              'Revisalo bien: una vez guardado no vas a poder cambiarlo desde la '
+              'app. Si después necesitás corregirlo, tendrás que pedírselo a la playa.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Revisar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+        );
+        if (confirmar != true || !mounted) return;
+        ciNuevo = ci;
+      }
+    }
 
     ref
         .read(actualizarPerfilProvider.notifier)
         .actualizar(
           actual.copyWith(
             nombre: _nombreController.text.trim(),
+            ciRuc: ciNuevo,
             telefono: _telefonoController.text.trim(),
             direccion: _direccionController.text.trim(),
           ),
         );
+  }
+
+  Future<void> _solicitarCorreccionCi(ClienteModel perfil) async {
+    final abierto = await Contacto.abrirEmail(
+      asunto: 'Corrección de CI/RUC — Cliente N° ${perfil.id}',
+      cuerpo: 'Hola, solicito la corrección de mi CI/RUC.\n\n'
+          'Nombre: ${perfil.nombre}\n'
+          'Email de la cuenta: ${perfil.email ?? '-'}\n'
+          'CI/RUC registrado: ${perfil.ciRuc}\n'
+          'CI/RUC correcto: \n\n'
+          'Gracias.',
+    );
+    if (!abierto) _avisoSinApp('No se encontró una app de correo. Escribinos a ${Contacto.email}.');
+  }
+
+  Future<void> _abrirWhatsApp() async {
+    final abierto = await Contacto.abrirWhatsApp(
+      mensaje: 'Hola, les escribo desde la app de A&J Autos Usados.',
+    );
+    if (!abierto) _avisoSinApp('No se pudo abrir WhatsApp. Nuestro número es ${Contacto.telefono}.');
+  }
+
+  Future<void> _abrirEmailContacto() async {
+    final abierto = await Contacto.abrirEmail(asunto: 'Consulta desde la app');
+    if (!abierto) _avisoSinApp('No se encontró una app de correo. Escribinos a ${Contacto.email}.');
+  }
+
+  void _avisoSinApp(String mensaje) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
   Future<void> _abrirUbicacionAgencia() async {
@@ -180,13 +246,18 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
     if (perfilCargado != null && _clienteIdCargado != perfilCargado.id) {
       _clienteIdCargado = perfilCargado.id;
       _nombreController.text = perfilCargado.nombre;
-      _ciRucController.text = (perfilCargado.ciRuc == null || perfilCargado.ciRuc!.isEmpty)
-          ? 'Sin registrar'
-          : perfilCargado.ciRuc!;
+      _ciRucController.text = perfilCargado.ciRuc ?? '';
       _telefonoController.text = perfilCargado.telefono ?? '';
       _direccionController.text = perfilCargado.direccion ?? '';
       _fotoPerfil = null;
       _cargarFotoGuardada(perfilCargado.id);
+    }
+    // Al registrar el CI se muestra el valor guardado (normalizado por la
+    // API, p. ej. sin puntos). Ya bloqueado, no pisa ninguna edición.
+    if (perfilCargado != null &&
+        perfilCargado.tieneCiRuc &&
+        _ciRucController.text != perfilCargado.ciRuc) {
+      _ciRucController.text = perfilCargado.ciRuc!;
     }
 
     ref.listen<ActualizarPerfilState>(actualizarPerfilProvider, (
@@ -303,13 +374,32 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _ciRucController,
-                      readOnly: true,
-                      enabled: false,
-                      decoration: const InputDecoration(
+                      readOnly: perfil.tieneCiRuc,
+                      enabled: !perfil.tieneCiRuc,
+                      keyboardType: TextInputType.text,
+                      decoration: InputDecoration(
                         labelText: 'CI / RUC',
-                        helperText: 'No editable',
+                        hintText: 'Ej.: 1234567 o 80012345-6',
+                        helperText: perfil.tieneCiRuc
+                            ? 'Ya registrado: no se puede modificar desde la app'
+                            : 'Podés cargarlo una sola vez. Revisalo bien antes de guardar.',
+                        helperMaxLines: 2,
+                        errorMaxLines: 2,
+                        prefixIcon: perfil.tieneCiRuc
+                            ? const Icon(Icons.lock_outline, size: 20)
+                            : null,
                       ),
+                      validator: perfil.tieneCiRuc ? null : Validators.ciRuc,
                     ),
+                    if (perfil.tieneCiRuc)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => _solicitarCorreccionCi(perfil),
+                          icon: const Icon(Icons.mail_outline, size: 18),
+                          label: const Text('¿Tu CI es incorrecto? Solicitar corrección'),
+                        ),
+                      ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _telefonoController,
@@ -400,6 +490,11 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    _AcercaDeNosotros(
+                      onWhatsApp: _abrirWhatsApp,
+                      onEmail: _abrirEmailContacto,
+                    ),
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
                       onPressed: _cerrarSesion,
@@ -441,6 +536,110 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "Acerca de nosotros": presentación breve de la playa, contacto por
+/// WhatsApp (abre directo el chat) y email, y cómo pedir correcciones de datos.
+class _AcercaDeNosotros extends StatelessWidget {
+  const _AcercaDeNosotros({required this.onWhatsApp, required this.onEmail});
+
+  final VoidCallback onWhatsApp;
+  final VoidCallback onEmail;
+
+  static const Color _verdeWhatsApp = Color(0xFF25D366);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.info_outline, color: colors.primary),
+                const SizedBox(width: 8),
+                Text('Acerca de nosotros', style: theme.textTheme.titleSmall),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '$agenciaNombre es una playa de autos de Carapeguá dedicada a la '
+              'compra, venta y consignación de vehículos usados, con la opción '
+              'de financiar tu compra en cuotas.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            _FilaContacto(icono: Icons.phone_outlined, texto: Contacto.telefono),
+            const SizedBox(height: 4),
+            _FilaContacto(icono: Icons.mail_outline, texto: Contacto.email),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onWhatsApp,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _verdeWhatsApp,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.chat_outlined),
+                    label: const Text('WhatsApp'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onEmail,
+                    icon: const Icon(Icons.mail_outline),
+                    label: const Text('Email'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                '¿Necesitás corregir un dato que no podés editar, como tu CI/RUC? '
+                'Escribinos a ${Contacto.email} indicando el dato correcto y lo '
+                'actualizamos por vos.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilaContacto extends StatelessWidget {
+  const _FilaContacto({required this.icono, required this.texto});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icono, size: 18, color: colors.outline),
+        const SizedBox(width: 8),
+        Expanded(child: SelectableText(texto)),
+      ],
     );
   }
 }

@@ -11,10 +11,10 @@ class ProfileRepository {
     return ClienteModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// ActualizarPerfilClienteDto (el DTO real de PUT /api/micuenta/perfil)
-  /// solo acepta nombre/telefono/direccion — ni CI/RUC, ni email, ni
-  /// rangoPrecio son editables por el cliente, así que esos campos de
-  /// [cliente] se ignoran acá (ver nota en cliente_model.dart).
+  /// PUT /api/micuenta/perfil acepta nombre/telefono/direccion y el CI/RUC,
+  /// este último SOLO si el cliente todavía no lo tenía (se carga una única
+  /// vez; si ya existe, la API rechaza cualquier cambio). Email y rangoPrecio
+  /// no son editables por el cliente.
   Future<void> actualizarPerfil(ClienteModel cliente) async {
     await DioClient.put(
       'MiCuenta/perfil',
@@ -22,6 +22,7 @@ class ProfileRepository {
         'nombre': cliente.nombre,
         'telefono': cliente.telefono ?? '',
         'direccion': cliente.direccion ?? '',
+        if (cliente.tieneCiRuc) 'cI_RUC': cliente.ciRuc,
       },
     );
   }

@@ -316,7 +316,7 @@
 
     // ── Cambiar estado ──────────────────────────────────────────────────
     // ✅ CORRECCIÓN: lee el token del formToken oculto que sí existe en el DOM
-    function cambiarEstado(citaId, estado) {
+    function cambiarEstado(citaId, estado, motivo) {
         const estadosMap = {
             'Confirmada': 2,
             'Realizada':  3,
@@ -355,14 +355,26 @@
         estadoField.value = estadoCitaId;
         form.appendChild(estadoField);
 
+        if (motivo) {
+            const motivoField = document.createElement('input');
+            motivoField.type  = 'hidden';
+            motivoField.name  = 'motivo';
+            motivoField.value = motivo;
+            form.appendChild(motivoField);
+        }
+
         document.body.appendChild(form);
         form.submit();
     }
 
+    // Cancelar con motivo opcional: se agrega a la descripción de la cita y el
+    // cliente lo ve en la app (y en la notificación). Cancelar el cuadro = no cancelar.
     function confirmarCancelar(id, cliente) {
-        if (confirm('¿Está seguro que desea cancelar la cita de "' + cliente + '"?')) {
-            cambiarEstado(id, 'Cancelada');
-        }
+        const motivo = prompt(
+            '¿Cancelar la cita de "' + cliente + '"?\n\n' +
+            'Motivo (opcional, lo verá el cliente en la app):', '');
+        if (motivo === null) return;
+        cambiarEstado(id, 'Cancelada', motivo.trim().substring(0, 300));
     }
 </script>
 </body>

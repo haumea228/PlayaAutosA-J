@@ -29,6 +29,12 @@ class CitaModel {
   final String estadoDescripcion;
   final String? estadoColor;
 
+  // Ids de la tabla EstadosCita: 1 Pendiente, 2 Confirmada, 3 Realizada, 4 Cancelada.
+  /// Mismas reglas que la API: Pendiente o Confirmada, y con horario futuro.
+  bool get puedeCancelarse =>
+      (estadoCitaId == 1 || estadoCitaId == 2) &&
+      fechaHora.isAfter(DateTime.now());
+
   factory CitaModel.fromJson(Map<String, dynamic> json) {
     return CitaModel(
       id: json['citaId'] as int,

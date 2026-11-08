@@ -51,6 +51,8 @@ dependencies:
   firebase_core: ^3.15.2
   flutter_local_notifications: ^22.3.3
   flutter_web_auth_2: ^5.1.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +64,20 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# Ícono de la app. Para regenerarlo después de cambiar las imágenes:
+#   dart run flutter_launcher_icons
+# - icono.png: logo con fondo blanco (ícono clásico e iOS).
+# - icono_adaptativo.png: logo sin fondo con margen, para la máscara
+#   redonda/cuadrada de Android 8+ (el fondo blanco lo pone Android).
+flutter_launcher_icons:
+  image_path: "assets/icon/icono.png"
+  android: "launcher_icon"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icono_adaptativo.png"
+  ios: true
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,6 +92,7 @@ flutter:
 
   assets:
     - assets/images/logo.png
+    - assets/icon/icono_adaptativo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

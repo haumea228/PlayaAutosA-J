@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PlayaAutos.API.Data;
 using PlayaAutos.API.DTOs;
+using PlayaAutos.API.Helpers;
 using PlayaAutos.API.Models;
 using PlayaAutos.API.Services;
 using System.Security.Claims;
@@ -26,6 +27,17 @@ namespace PlayaAutos.API.Controllers
             _comprobantes = comprobantes;
             _pagoService = pagoService;
             _pagosOnline = pagosOnline;
+        }
+
+        private const string MensajeCiDuplicado =
+            "Ese CI/RUC ya está registrado en otra cuenta. Si es tuyo, comunicate con la playa.";
+
+        /// <summary>Formato y unicidad de un CI/RUC que el cliente carga por primera vez.</summary>
+        private async Task<string?> ValidarCiNuevoAsync(string ciNormalizado, int clienteId)
+        {
+            if (!CiRuc.EsValido(ciNormalizado)) return CiRuc.MensajeFormato;
+            var enUso = await _context.Clientes.AnyAsync(c => c.CI_RUC == ciNormalizado && c.ClienteId != clienteId);
+            return enUso ? MensajeCiDuplicado : null;
         }
 
         private int? GetUsuarioId()
@@ -67,12 +79,38 @@ namespace PlayaAutos.API.Controllers
             var cliente = await _context.Clientes.FirstOrDefaultAsync(x => x.UsuarioId == uid);
             if (cliente == null) return NotFound("No se encontró perfil de cliente.");
 
+            // CI/RUC: se carga una única vez. Si ya está registrado no se puede
+            // cambiar desde la app (lo corrige un administrador desde la web).
+            var ciNuevo = CiRuc.Normalizar(dto.CI_RUC);
+            if (ciNuevo != null)
+            {
+                if (!string.IsNullOrEmpty(cliente.CI_RUC))
+                {
+                    if (ciNuevo != cliente.CI_RUC)
+                        return BadRequest("Tu CI/RUC ya está registrado y no se puede modificar desde la app. Si es incorrecto, solicitá la corrección a la playa.");
+                }
+                else
+                {
+                    var error = await ValidarCiNuevoAsync(ciNuevo, cliente.ClienteId);
+                    if (error != null) return BadRequest(error);
+                    cliente.CI_RUC = ciNuevo;
+                }
+            }
+
             cliente.Nombre    = dto.Nombre;
             cliente.Telefono  = dto.Telefono;
             cliente.Direccion = dto.Direccion;
 
-            await _context.SaveChangesAsync();
-            return Ok(new { cliente.ClienteId });
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Índice único de CI_RUC: otro cliente lo registró al mismo tiempo.
+                return BadRequest(MensajeCiDuplicado);
+            }
+            return Ok(new { cliente.ClienteId, cliente.CI_RUC });
         }
 
         // POST: api/micuenta/dispositivos — registra (o reasigna) el token FCM
@@ -184,22 +222,22 @@ namespace PlayaAutos.API.Controllers
             var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == uid);
             if (cliente == null) return BadRequest("No se encontró perfil de cliente.");
 
-            bool changed = cliente.Nombre    != dto.Nombre
-                        || cliente.Telefono  != dto.Telefono
-                        || cliente.Direccion != dto.Direccion;
-            if (changed)
-            {
-                cliente.Nombre    = dto.Nombre;
-                cliente.Telefono  = dto.Telefono;
-                cliente.Direccion = dto.Direccion;
-            }
+            // Solo se actualizan los datos que vengan (portal web); la app no los
+            // envía y se usan los que ya tiene el perfil.
+            if (!string.IsNullOrWhiteSpace(dto.Nombre))    cliente.Nombre    = dto.Nombre.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Telefono))  cliente.Telefono  = dto.Telefono.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Direccion)) cliente.Direccion = dto.Direccion.Trim();
 
-            if (string.IsNullOrEmpty(cliente.CI_RUC) && !string.IsNullOrEmpty(dto.CI_RUC))
+            // Para poder contactarlo, el perfil tiene que tener nombre y teléfono.
+            if (string.IsNullOrWhiteSpace(cliente.Nombre) || string.IsNullOrWhiteSpace(cliente.Telefono))
+                return BadRequest("Completá tu nombre y teléfono en tu perfil antes de agendar una cita.");
+
+            var ciCita = CiRuc.Normalizar(dto.CI_RUC);
+            if (string.IsNullOrEmpty(cliente.CI_RUC) && ciCita != null)
             {
-                bool ciEnUso = await _context.Clientes.AnyAsync(c => c.CI_RUC == dto.CI_RUC);
-                if (ciEnUso)
-                    return BadRequest("El CI/RUC ingresado ya está registrado. Verificá el número.");
-                cliente.CI_RUC = dto.CI_RUC;
+                var errorCi = await ValidarCiNuevoAsync(ciCita, cliente.ClienteId);
+                if (errorCi != null) return BadRequest(errorCi);
+                cliente.CI_RUC = ciCita;
             }
 
             var vendedorId = await _context.Usuarios
@@ -230,8 +268,13 @@ namespace PlayaAutos.API.Controllers
 
         // PUT: api/micuenta/citas/{id}/cancelar
         [HttpPut("citas/{id}/cancelar")]
-        public async Task<IActionResult> CancelarCita(int id)
+        public async Task<IActionResult> CancelarCita(int id,
+            [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)]
+            CancelarCitaClienteDto? dto)
         {
+            var motivo = dto?.Motivo?.Trim();
+            if (motivo?.Length > 300) return BadRequest("El motivo no puede superar los 300 caracteres.");
+
             var uid = GetUsuarioId();
             if (uid == null) return Unauthorized();
 
@@ -244,8 +287,20 @@ namespace PlayaAutos.API.Controllers
 
             if (cita.EstadoCitaId == 3 || cita.EstadoCitaId == 4)
                 return BadRequest("No se puede cancelar una cita ya realizada o cancelada.");
+            if (cita.FechaHora < DateTime.Now)
+                return BadRequest("No se puede cancelar una cita cuyo horario ya pasó.");
 
             cita.EstadoCitaId = 4;
+
+            // Queda registrado en la descripción (visible en la web y en la app)
+            // que la canceló el propio cliente, sin borrar lo que ya había.
+            var linea = string.IsNullOrEmpty(motivo)
+                ? "Cancelada por el cliente."
+                : $"Cancelada por el cliente. Motivo: {motivo}";
+            cita.Observaciones = string.IsNullOrWhiteSpace(cita.Observaciones)
+                ? linea
+                : $"{cita.Observaciones.TrimEnd()}\n\n{linea}";
+
             await _context.SaveChangesAsync();
 
             return Ok(new { cita.CitaId });

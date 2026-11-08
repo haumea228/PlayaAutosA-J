@@ -35,10 +35,6 @@ class AgendarCitaNotifier extends StateNotifier<AgendarCitaState> {
   Future<void> agendar({
     int? vehiculoId,
     required DateTime fechaHora,
-    required String nombre,
-    required String telefono,
-    required String direccion,
-    String? ciRuc,
     String tipoCita = 'Consulta',
     String? observaciones,
   }) async {
@@ -47,10 +43,6 @@ class AgendarCitaNotifier extends StateNotifier<AgendarCitaState> {
       final citaId = await _repository.agendarCita(
         vehiculoId: vehiculoId,
         fechaHora: fechaHora,
-        nombre: nombre,
-        telefono: telefono,
-        direccion: direccion,
-        ciRuc: ciRuc,
         tipoCita: tipoCita,
         observaciones: observaciones,
       );

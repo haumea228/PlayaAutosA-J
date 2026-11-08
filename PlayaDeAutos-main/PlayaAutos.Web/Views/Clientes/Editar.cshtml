@@ -51,6 +51,10 @@
             <div class="pa-alert danger mb-3">
                 <i class="fa-solid fa-triangle-exclamation me-2"></i>
                 <strong>Corrija los errores antes de continuar.</strong>
+                @foreach (var err in ViewData.ModelState[string.Empty]?.Errors ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.ModelBinding.ModelError>())
+                {
+                    <div style="margin-top:0.35rem;">@err.ErrorMessage</div>
+                }
             </div>
         }
 

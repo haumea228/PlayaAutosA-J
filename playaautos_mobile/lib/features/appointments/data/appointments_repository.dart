@@ -17,21 +17,12 @@ class AppointmentsRepository {
   /// vehiculoId es opcional: el cliente puede agendar desde el detalle de un
   /// vehículo puntual, o sin asociar ninguno.
   ///
-  /// AgendarCitaClienteDto (el DTO real de POST /api/micuenta/citas/agendar)
-  /// exige nombre/telefono/direccion — el backend los usa para actualizar el
-  /// perfil del cliente si cambiaron, igual que hacía la web: la primera vez
-  /// se completan y quedan guardados; de ahí en más son editables (excepto
-  /// el CI/RUC, que el backend solo graba si el cliente todavía no tiene
-  /// uno — por eso ciRuc es opcional acá, la pantalla decide si corresponde
-  /// enviarlo). Por eso estos datos los pasa quien llama (la pantalla, ya
-  /// con el perfil precargado) en vez de que el repository los adivine.
+  /// Los datos de contacto (nombre, teléfono, dirección, CI/RUC) ya no se
+  /// envían: se editan solo desde Perfil y la API usa los del perfil del
+  /// cliente autenticado (exige que tenga nombre y teléfono).
   Future<int> agendarCita({
     int? vehiculoId,
     required DateTime fechaHora,
-    required String nombre,
-    required String telefono,
-    required String direccion,
-    String? ciRuc,
     String tipoCita = 'Consulta',
     String? observaciones,
   }) async {
@@ -42,15 +33,20 @@ class AppointmentsRepository {
         'fechaHora': fechaHora.toIso8601String(),
         'tipoCita': tipoCita,
         'observaciones': observaciones,
-        'nombre': nombre,
-        'telefono': telefono,
-        'direccion': direccion,
-        if (ciRuc != null && ciRuc.isNotEmpty) 'cI_RUC': ciRuc,
       },
     );
 
     final body = response.data as Map<String, dynamic>;
     return body['citaId'] as int;
+  }
+
+  /// Cancela una cita propia (Pendiente o Confirmada y todavía no pasada).
+  /// El motivo es opcional y queda en la descripción para el encargado.
+  Future<void> cancelarCita(int citaId, {String? motivo}) async {
+    await DioClient.put(
+      'MiCuenta/citas/$citaId/cancelar',
+      data: {'motivo': motivo},
+    );
   }
 
   /// No existe un endpoint de disponibilidad en el backend (ni tampoco
@@ -63,8 +59,16 @@ class AppointmentsRepository {
   Future<List<String>> getHorariosDisponibles(DateTime fecha) async {
     if (fecha.weekday == DateTime.sunday) return [];
 
+    // Si la cita es para hoy, no se ofrecen horarios que ya pasaron (la API
+    // rechaza fechas en el pasado): solo desde la próxima hora en adelante.
+    final ahora = DateTime.now();
+    final esHoy = fecha.year == ahora.year &&
+        fecha.month == ahora.month &&
+        fecha.day == ahora.day;
+    final desde = esHoy ? ahora.hour + 1 : 8;
+
     return [
-      for (var hora = 8; hora <= 18; hora++)
+      for (var hora = desde < 8 ? 8 : desde; hora <= 18; hora++)
         '${hora.toString().padLeft(2, '0')}:00',
     ];
   }

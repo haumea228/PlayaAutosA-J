@@ -63,10 +63,8 @@ namespace PlayaAutos.Web.Controllers
 
             if (!response.IsSuccessStatusCode)
             {
-                var detalle = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError("", detalle.Contains("CI_RUC") || detalle.Contains("ci_ruc")
-                    ? "Ya existe un cliente registrado con ese CI/RUC."
-                    : "Error al registrar el cliente. Intente nuevamente.");
+                ModelState.AddModelError("", await ApiService.LeerMensajeErrorAsync(response)
+                    ?? "Error al registrar el cliente. Intente nuevamente.");
                 return View(vm);
             }
 
@@ -143,10 +141,8 @@ namespace PlayaAutos.Web.Controllers
 
             if (!resp.IsSuccessStatusCode)
             {
-                var detalle = await resp.Content.ReadAsStringAsync();
-                ModelState.AddModelError("", detalle.Contains("CI_RUC") || detalle.Contains("ci_ruc")
-                    ? "Ya existe un cliente registrado con ese CI/RUC."
-                    : "Error al actualizar el cliente. Intente nuevamente.");
+                ModelState.AddModelError("", await ApiService.LeerMensajeErrorAsync(resp)
+                    ?? "Error al actualizar el cliente. Intente nuevamente.");
                 vm.ClienteId = id;
                 return View(vm);
             }

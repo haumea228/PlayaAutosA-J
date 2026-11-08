@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PlayaAutos.API.Data;
 using PlayaAutos.API.DTOs;
+using PlayaAutos.API.Helpers;
 using PlayaAutos.API.Models;
 namespace PlayaAutos.API.Controllers
 {
@@ -91,13 +92,14 @@ namespace PlayaAutos.API.Controllers
         public async Task<ActionResult<ClienteDto>> PostCliente(CrearClienteDto dto)
         {
             // Verificar CI/RUC duplicado
-            if (await _context.Clientes.AnyAsync(c => c.CI_RUC == dto.CI_RUC))
-                return BadRequest("Ya existe un cliente con ese CI/RUC.");
+            var ci = CiRuc.Normalizar(dto.CI_RUC);
+            if (ci != null && await _context.Clientes.AnyAsync(c => c.CI_RUC == ci))
+                return BadRequest("Ya existe un cliente registrado con ese CI/RUC.");
 
             var cliente = new Cliente
             {
                 Nombre = dto.Nombre,
-                CI_RUC = dto.CI_RUC,
+                CI_RUC = ci,
                 Telefono = dto.Telefono,
                 Email = dto.Email,
                 Direccion = dto.Direccion,
@@ -128,8 +130,14 @@ namespace PlayaAutos.API.Controllers
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null) return NotFound();
 
+            // El administrador sí puede corregir el CI/RUC (p. ej. cuando el
+            // cliente lo cargó mal en la app), pero sin repetir el de otro cliente.
+            var ci = CiRuc.Normalizar(dto.CI_RUC);
+            if (ci != null && await _context.Clientes.AnyAsync(c => c.CI_RUC == ci && c.ClienteId != id))
+                return BadRequest("Ya existe otro cliente registrado con ese CI/RUC.");
+
             cliente.Nombre = dto.Nombre;
-            cliente.CI_RUC = dto.CI_RUC;
+            cliente.CI_RUC = ci;
             cliente.Telefono = dto.Telefono;
             cliente.Email = dto.Email;
             cliente.Direccion = dto.Direccion;

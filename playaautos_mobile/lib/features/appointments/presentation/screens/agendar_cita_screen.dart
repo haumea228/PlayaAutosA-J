@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../catalog/presentation/providers/catalogo_provider.dart';
+import '../../../profile/data/models/cliente_model.dart';
 import '../../../profile/presentation/providers/perfil_provider.dart';
 import '../providers/citas_provider.dart';
 
@@ -19,21 +20,10 @@ class AgendarCitaScreen extends ConsumerStatefulWidget {
 }
 
 class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _ciController = TextEditingController();
-  final _telefonoController = TextEditingController();
-  final _direccionController = TextEditingController();
   final _observacionesController = TextEditingController();
 
   DateTime? _fecha;
   String? _horario;
-  // Qué cliente está reflejado en los controllers — no un bool de una sola
-  // vez (ver nota larga en perfil_screen.dart: un bool deja datos del
-  // cliente anterior pisados en pantalla si esta instancia sobrevive a un
-  // logout+login con otra cuenta).
-  int? _clienteIdCargado;
-  bool _ciYaRegistrado = false;
 
   int? get _vehiculoIdInt {
     final id = widget.vehiculoId;
@@ -42,23 +32,37 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
 
   @override
   void dispose() {
-    _nombreController.dispose();
-    _ciController.dispose();
-    _telefonoController.dispose();
-    _direccionController.dispose();
     _observacionesController.dispose();
     super.dispose();
   }
 
+  /// Los datos de contacto se editan solo en Perfil. Para agendar, el perfil
+  /// necesita al menos nombre y teléfono (la API también lo exige).
+  static bool _perfilCompleto(ClienteModel? perfil) =>
+      perfil != null &&
+      perfil.nombre.trim().isNotEmpty &&
+      (perfil.telefono ?? '').trim().isNotEmpty;
+
+  static bool _esDiaHabil(DateTime fecha) => fecha.weekday != DateTime.sunday;
+
   Future<void> _elegirFecha() async {
-    final ahora = DateTime.now();
-    final primerDiaValido = ahora.add(const Duration(days: 1));
+    final hoy = DateUtils.dateOnly(DateTime.now());
+
+    // La fecha inicial del calendario TIENE que cumplir selectableDayPredicate
+    // (si no, showDatePicker lanza una aserción y el botón "no hace nada").
+    // Antes era siempre "mañana", que un sábado cae en domingo: se busca el
+    // próximo día hábil.
+    var inicial = _fecha ?? hoy.add(const Duration(days: 1));
+    while (!_esDiaHabil(inicial)) {
+      inicial = inicial.add(const Duration(days: 1));
+    }
+
     final fecha = await showDatePicker(
       context: context,
-      initialDate: primerDiaValido,
-      firstDate: ahora,
-      lastDate: ahora.add(const Duration(days: 90)),
-      selectableDayPredicate: (date) => date.weekday != DateTime.sunday,
+      initialDate: inicial,
+      firstDate: hoy,
+      lastDate: hoy.add(const Duration(days: 90)),
+      selectableDayPredicate: _esDiaHabil,
     );
     if (fecha != null) {
       setState(() {
@@ -69,7 +73,12 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_perfilCompleto(ref.read(perfilProvider).valueOrNull)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Completá tu nombre y teléfono en tu perfil.')),
+      );
+      return;
+    }
     if (_fecha == null || _horario == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Elegí una fecha y un horario.')),
@@ -91,10 +100,6 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
         .agendar(
           vehiculoId: _vehiculoIdInt,
           fechaHora: fechaHora,
-          nombre: _nombreController.text.trim(),
-          telefono: _telefonoController.text.trim(),
-          direccion: _direccionController.text.trim(),
-          ciRuc: _ciYaRegistrado ? null : _ciController.text.trim(),
           observaciones: _observacionesController.text.trim().isEmpty
               ? null
               : _observacionesController.text.trim(),
@@ -111,27 +116,10 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
         ? ref.watch(horariosDisponiblesProvider(_fecha!))
         : null;
     final agendarState = ref.watch(agendarCitaProvider);
-
-    // Primera vez que agenda: el perfil viene con nombre/CI/telefono/direccion
-    // vacíos y el cliente los completa acá (igual que en la web). Si ya
-    // agendó antes, se precargan y quedan editables — salvo el CI/RUC, que
-    // una vez registrado el backend ya no lo vuelve a pisar.
-    //
-    // Se precarga a partir del valor YA disponible en perfilProvider en vez
-    // de esperar un cambio vía ref.listen: si el cliente ya visitó Perfil
-    // antes, perfilProvider llega acá con el dato cacheado y ref.listen no
-    // dispara (no hay transición, el valor ya estaba asentado) — los campos
-    // quedaban vacíos pese a haber datos.
-    final perfilCargado = ref.watch(perfilProvider).valueOrNull;
-    if (perfilCargado != null && _clienteIdCargado != perfilCargado.id) {
-      _clienteIdCargado = perfilCargado.id;
-      _nombreController.text = perfilCargado.nombre;
-      _telefonoController.text = perfilCargado.telefono ?? '';
-      _direccionController.text = perfilCargado.direccion ?? '';
-      _ciController.text = perfilCargado.ciRuc ?? '';
-      _ciYaRegistrado =
-          perfilCargado.ciRuc != null && perfilCargado.ciRuc!.isNotEmpty;
-    }
+    // Se observa el perfil: al volver de "Editar en Perfil" (que lo refresca
+    // al guardar) la tarjeta de contacto se actualiza sola.
+    final perfilAsync = ref.watch(perfilProvider);
+    final perfilCompleto = _perfilCompleto(perfilAsync.valueOrNull);
 
     ref.listen<AgendarCitaState>(agendarCitaProvider, (previous, next) {
       if (!context.mounted) return;
@@ -155,7 +143,6 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Form(
-              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -234,47 +221,21 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _nombreController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre completo',
+                  perfilAsync.when(
+                    data: (perfil) => _DatosContacto(
+                      perfil: perfil,
+                      completo: perfilCompleto,
+                      onEditar: () => context.push('/editar-perfil'),
                     ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Ingresá tu nombre'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _ciController,
-                    readOnly: _ciYaRegistrado,
-                    decoration: InputDecoration(
-                      labelText: 'CI / RUC',
-                      helperText: _ciYaRegistrado
-                          ? 'Ya registrado, no editable'
-                          : null,
+                    loading: () => const LinearProgressIndicator(),
+                    error: (error, stack) => _DatosContacto(
+                      perfil: null,
+                      completo: false,
+                      onEditar: () => ref.invalidate(perfilProvider),
+                      error: true,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _telefonoController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Teléfono'),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Ingresá tu teléfono'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _direccionController,
-                    decoration: const InputDecoration(labelText: 'Dirección'),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? 'Ingresá tu dirección'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _observacionesController,
                     decoration: const InputDecoration(
@@ -284,7 +245,7 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: agendarState.isLoading ? null : _submit,
+                    onPressed: agendarState.isLoading || !perfilCompleto ? null : _submit,
                     child: agendarState.isLoading
                         ? const SizedBox(
                             height: 20,
@@ -301,6 +262,106 @@ class _AgendarCitaScreenState extends ConsumerState<AgendarCitaScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Datos de contacto del cliente, de solo lectura: se editan únicamente en
+/// Perfil (donde viven las reglas, como el CI/RUC de carga única).
+class _DatosContacto extends StatelessWidget {
+  const _DatosContacto({
+    required this.perfil,
+    required this.completo,
+    required this.onEditar,
+    this.error = false,
+  });
+
+  final ClienteModel? perfil;
+  final bool completo;
+  final VoidCallback onEditar;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    if (error) {
+      return Row(
+        children: [
+          const Expanded(child: Text('No se pudieron cargar tus datos.')),
+          TextButton(onPressed: onEditar, child: const Text('Reintentar')),
+        ],
+      );
+    }
+
+    final p = perfil!;
+    String valor(String? v) => (v ?? '').trim().isEmpty ? '—' : v!.trim();
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Te vamos a contactar con estos datos:',
+              style: theme.textTheme.bodySmall?.copyWith(color: colors.outline),
+            ),
+            const SizedBox(height: 8),
+            _Fila(icono: Icons.person_outline, texto: valor(p.nombre)),
+            _Fila(icono: Icons.phone_outlined, texto: valor(p.telefono)),
+            if ((p.direccion ?? '').trim().isNotEmpty)
+              _Fila(icono: Icons.home_outlined, texto: p.direccion!.trim()),
+            if (!completo) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.error.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Para agendar necesitamos tu nombre y teléfono. Completalos en tu perfil.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onEditar,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: Text(completo ? 'Editar en Perfil' : 'Completar en Perfil'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Fila extends StatelessWidget {
+  const _Fila({required this.icono, required this.texto});
+
+  final IconData icono;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icono, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(child: Text(texto)),
+        ],
       ),
     );
   }

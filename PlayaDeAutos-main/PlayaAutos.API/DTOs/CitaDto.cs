@@ -31,6 +31,19 @@
     public class CambiarEstadoCitaDto
     {
         public int EstadoCitaId { get; set; }
+
+        /// <summary>
+        /// Opcional, solo al cancelar: se agrega a la descripción de la cita
+        /// (la ve el cliente en la app) y va en la notificación push.
+        /// </summary>
+        public string? Motivo { get; set; }
+    }
+
+    /// <summary>Cancelación hecha por el cliente desde la app.</summary>
+    public class CancelarCitaClienteDto
+    {
+        /// <summary>Opcional: queda en la descripción para que lo vea el encargado.</summary>
+        public string? Motivo { get; set; }
     }
 
     public class EstadoCitaDto
@@ -46,9 +59,13 @@
         public DateTime FechaHora { get; set; }
         public string TipoCita { get; set; } = "Consulta";
         public string? Observaciones { get; set; }
-        public string Nombre { get; set; } = string.Empty;
+
+        // Datos de contacto: OPCIONALES. La app ya no los envía (se editan solo
+        // desde Perfil y se usan los del perfil); el portal web de clientes sí
+        // los manda y, si vienen, se actualizan en el perfil como antes.
+        public string? Nombre { get; set; }
         public string? CI_RUC { get; set; }
-        public string Telefono { get; set; } = string.Empty;
-        public string Direccion { get; set; } = string.Empty;
+        public string? Telefono { get; set; }
+        public string? Direccion { get; set; }
     }
 }

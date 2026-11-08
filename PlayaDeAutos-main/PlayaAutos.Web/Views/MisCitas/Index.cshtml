@@ -212,7 +212,7 @@
     {
         foreach (var cita in Model)
         {
-            var puedeCancel = cita.EstadoCitaId == 1 || cita.EstadoCitaId == 2;
+            var puedeCancel = (cita.EstadoCitaId == 1 || cita.EstadoCitaId == 2) && cita.FechaHora > DateTime.Now;
             var estadoColor = !string.IsNullOrEmpty(cita.EstadoColor) ? cita.EstadoColor : "#8b949e";
 
             <div class="cita-card">

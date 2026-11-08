@@ -158,15 +158,17 @@ namespace PlayaAutos.Web.Controllers
         // ✅ CORREGIDO: [HttpPost] y [ValidateAntiForgeryToken] explícitos
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CambiarEstado(int id, int estadoCitaId)
+        public async Task<IActionResult> CambiarEstado(int id, int estadoCitaId, string? motivo)
         {
             if (!EstaAutenticado()) return RedirectToAction("Login", "Auth");
 
-            var resp = await _api.PutAsync($"api/Citas/{id}/estado", new { estadoCitaId });
+            // motivo: opcional, solo se usa al cancelar (lo ve el cliente en la app).
+            var resp = await _api.PutAsync($"api/Citas/{id}/estado", new { estadoCitaId, motivo });
 
-            TempData[resp.IsSuccessStatusCode ? "Exito" : "Error"] = resp.IsSuccessStatusCode
-                ? "Estado de la cita actualizado."
-                : "Error al cambiar el estado.";
+            if (resp.IsSuccessStatusCode)
+                TempData["Exito"] = "Estado de la cita actualizado.";
+            else
+                TempData["Error"] = await ApiService.LeerMensajeErrorAsync(resp) ?? "Error al cambiar el estado.";
 
             return RedirectToAction(nameof(Index));
         }

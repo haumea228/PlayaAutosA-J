@@ -59,15 +59,20 @@ class ClienteModel {
     };
   }
 
+  /// El CI/RUC se carga una única vez desde la app; después solo lo puede
+  /// corregir un administrador desde la web.
+  bool get tieneCiRuc => ciRuc != null && ciRuc!.trim().isNotEmpty;
+
   ClienteModel copyWith({
     String? nombre,
+    String? ciRuc,
     String? telefono,
     String? direccion,
   }) {
     return ClienteModel(
       id: id,
       nombre: nombre ?? this.nombre,
-      ciRuc: ciRuc,
+      ciRuc: ciRuc ?? this.ciRuc,
       telefono: telefono ?? this.telefono,
       email: email,
       direccion: direccion ?? this.direccion,

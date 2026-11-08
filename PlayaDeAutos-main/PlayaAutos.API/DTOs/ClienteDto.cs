@@ -47,5 +47,11 @@ namespace PlayaAutos.API.DTOs
         public string Nombre { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Solo se guarda si el cliente todavía no tiene CI/RUC (se carga una
+        /// única vez). Para corregirlo después, lo hace un administrador desde la web.
+        /// </summary>
+        public string? CI_RUC { get; set; }
     }
 }

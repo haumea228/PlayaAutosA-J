@@ -174,14 +174,28 @@ namespace PlayaAutos.API.Controllers
             if (estado == null)
                 return BadRequest("El estado no existe.");
 
+            var motivo = dto.Motivo?.Trim();
+            if (motivo?.Length > 300) return BadRequest("El motivo no puede superar los 300 caracteres.");
+
             var estadoAnterior = cita.EstadoCitaId;
             cita.EstadoCitaId = dto.EstadoCitaId;
+
+            // Motivo de cancelación: se agrega a la descripción, sin borrar lo
+            // que el cliente haya escrito al agendar.
+            if (dto.EstadoCitaId == EstadoCancelada && !string.IsNullOrEmpty(motivo))
+            {
+                var linea = $"Motivo de cancelación: {motivo}";
+                cita.Observaciones = string.IsNullOrWhiteSpace(cita.Observaciones)
+                    ? linea
+                    : $"{cita.Observaciones.TrimEnd()}\n\n{linea}";
+            }
+
             await _context.SaveChangesAsync();
 
             if (estadoAnterior != dto.EstadoCitaId &&
                 (dto.EstadoCitaId == EstadoConfirmada || dto.EstadoCitaId == EstadoCancelada))
             {
-                await NotificarCambioCitaAsync(cita, dto.EstadoCitaId == EstadoConfirmada);
+                await NotificarCambioCitaAsync(cita, dto.EstadoCitaId == EstadoConfirmada, motivo);
             }
 
             return Ok(new { cita.CitaId, estado = estado.Descripcion });
@@ -203,8 +217,9 @@ namespace PlayaAutos.API.Controllers
             return Ok(estados);
         }
 
-        private Task NotificarCambioCitaAsync(Cita cita, bool confirmada)
+        private Task NotificarCambioCitaAsync(Cita cita, bool confirmada, string? motivo = null)
         {
+            var porque = string.IsNullOrEmpty(motivo) ? "" : $" Motivo: {motivo}.";
             var cuando = $"{cita.FechaHora:dd/MM} a las {cita.FechaHora:HH:mm}";
             var vehiculo = cita.Vehiculo != null
                 ? $" ({cita.Vehiculo.Modelo.Marca.Nombre} {cita.Vehiculo.Modelo.Nombre})"
@@ -217,7 +232,7 @@ namespace PlayaAutos.API.Controllers
                     "cita", cita.CitaId)
                 : _notificaciones.NotificarUsuarioAsync(cita.Cliente.UsuarioId,
                     "Cita cancelada",
-                    $"Tu cita del {cuando}{vehiculo} fue cancelada. Podés agendar una nueva desde la app.",
+                    $"Tu cita del {cuando}{vehiculo} fue cancelada.{porque} Podés agendar una nueva desde la app.",
                     "cita", cita.CitaId);
         }
 

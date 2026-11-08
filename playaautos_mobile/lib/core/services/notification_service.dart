@@ -88,7 +88,9 @@ class NotificationService {
 
     await _local.initialize(
       settings: const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // Silueta monocroma (res/drawable/ic_notificacion.xml): el ícono de
+        // la app tiene fondo blanco y en la barra se vería un cuadrado.
+        android: AndroidInitializationSettings('@drawable/ic_notificacion'),
         iOS: DarwinInitializationSettings(
           requestAlertPermission: false,
           requestBadgePermission: false,
@@ -184,6 +186,7 @@ class NotificationService {
           channelDescription: _canal.description,
           importance: Importance.high,
           priority: Priority.high,
+          color: const Color(0xFF186784), // AppColors.tealPetroleo
           styleInformation: BigTextStyleInformation(notificacion.body ?? ''),
         ),
       ),

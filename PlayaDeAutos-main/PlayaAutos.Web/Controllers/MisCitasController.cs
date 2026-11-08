@@ -113,7 +113,7 @@ namespace PlayaAutos.Web.Controllers
 
             var response = await _api.PutAsync<object>($"api/micuenta/citas/{id}/cancelar", new { });
             if (!response.IsSuccessStatusCode)
-                TempData["Error"] = "No se pudo cancelar la cita.";
+                TempData["Error"] = await ApiService.LeerMensajeErrorAsync(response) ?? "No se pudo cancelar la cita.";
             else
                 TempData["Exito"] = "Cita cancelada correctamente.";
 

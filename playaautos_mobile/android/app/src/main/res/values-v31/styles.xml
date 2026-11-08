@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: pantalla de inicio nativa con fondo blanco (igual a la
+         pantalla de carga de Flutter en lib/shared/widgets/pantalla_carga.dart)
+         para que el paso de una a otra no se note. El logo es el ícono
+         adaptativo de la app. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">#FFFFFF</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

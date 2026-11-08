@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/router/app_router.dart';
@@ -10,11 +11,15 @@ import 'core/services/notification_service.dart';
 import 'features/appointments/presentation/providers/citas_provider.dart';
 import 'features/documents/presentation/providers/documentos_provider.dart';
 import 'features/installments/presentation/providers/cuotas_provider.dart';
+import 'shared/widgets/pantalla_carga.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.inicializar();
+  // Primero se muestra la app (con la pantalla de carga) y después se
+  // inicializa Firebase: así esa espera se ve con el indicador girando en
+  // lugar de alargar la pantalla de inicio nativa, que es estática.
   runApp(const ProviderScope(child: PlayaAutosApp()));
+  await NotificationService.instance.inicializar();
 
   // Sesión ya iniciada de una ejecución anterior: mantener el token de push
   // actualizado en la API (si venció el JWT, la API responde 401 y no pasa nada).
@@ -61,9 +66,15 @@ class _PlayaAutosAppState extends ConsumerState<PlayaAutosApp> {
     return MaterialApp.router(
       title: 'PlayaAutos',
       debugShowCheckedModeBanner: false,
+      // Calendarios, diálogos y textos de los componentes de Flutter en
+      // español (sin esto, showDatePicker mostraba "Select date", "Cancel"...).
+      locale: const Locale('es'),
+      supportedLocales: const [Locale('es'), Locale('en')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       routerConfig: AppRouter.router,
+      builder: (context, child) => PantallaCarga(child: child!),
     );
   }
 }
