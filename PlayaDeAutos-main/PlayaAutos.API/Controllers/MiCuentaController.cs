@@ -19,15 +19,20 @@ namespace PlayaAutos.API.Controllers
         private readonly ComprobanteStorage _comprobantes;
         private readonly CuotaPagoService _pagoService;
         private readonly PagoOnlineService _pagosOnline;
+        private readonly JwtHelper _jwt;
 
         public MiCuentaController(AppDbContext context, ComprobanteStorage comprobantes,
-            CuotaPagoService pagoService, PagoOnlineService pagosOnline)
+            CuotaPagoService pagoService, PagoOnlineService pagosOnline, JwtHelper jwt)
         {
             _context = context;
             _comprobantes = comprobantes;
             _pagoService = pagoService;
             _pagosOnline = pagosOnline;
+            _jwt = jwt;
         }
+
+        private const int EmailMaxLength = 150;
+        private const string MensajeEmailDuplicado = "Ese email ya está registrado en otra cuenta.";
 
         private const string MensajeCiDuplicado =
             "Ese CI/RUC ya está registrado en otra cuenta. Si es tuyo, comunicate con la playa.";
@@ -54,7 +59,7 @@ namespace PlayaAutos.API.Controllers
             var uid = GetUsuarioId();
             if (uid == null) return Unauthorized();
 
-            var c = await _context.Clientes.FirstOrDefaultAsync(x => x.UsuarioId == uid);
+            var c = await _context.Clientes.Include(x => x.Usuario).FirstOrDefaultAsync(x => x.UsuarioId == uid);
             if (c == null) return NotFound("No se encontró perfil de cliente.");
 
             return new ClienteDto
@@ -63,7 +68,9 @@ namespace PlayaAutos.API.Controllers
                 Nombre    = c.Nombre,
                 CI_RUC    = c.CI_RUC,
                 Telefono  = c.Telefono,
-                Email     = c.Email,
+                // El email de la cuenta (con el que inicia sesión), que es el que
+                // el cliente puede cambiar desde Perfil.
+                Email     = c.Usuario?.UsuarioEmail ?? c.Email,
                 Direccion = c.Direccion,
                 Activo    = c.Activo
             };
@@ -97,6 +104,30 @@ namespace PlayaAutos.API.Controllers
                 }
             }
 
+            // Email: es también el usuario para iniciar sesión, así que cambiarlo
+            // exige la contraseña actual (si alguien toma el teléfono desbloqueado
+            // no puede quedarse con la cuenta) y que no lo use otra cuenta.
+            var usuario = await _context.Usuarios.FirstAsync(u => u.UsuarioId == uid);
+            var emailNuevo = dto.Email?.Trim();
+            var cambiaEmail = !string.IsNullOrEmpty(emailNuevo) &&
+                !string.Equals(emailNuevo, usuario.UsuarioEmail, StringComparison.OrdinalIgnoreCase);
+            if (cambiaEmail)
+            {
+                if (emailNuevo!.Length > EmailMaxLength ||
+                    !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(emailNuevo) ||
+                    !emailNuevo.Contains('.'))
+                    return BadRequest("Ingresá un email válido.");
+                if (string.IsNullOrEmpty(dto.PasswordActual))
+                    return BadRequest("Ingresá tu contraseña actual para cambiar el email.");
+                if (!Contrasenas.Coincide(dto.PasswordActual, usuario.PasswordHash))
+                    return BadRequest("La contraseña actual no es correcta.");
+                if (await _context.Usuarios.AnyAsync(u => u.UsuarioEmail == emailNuevo && u.UsuarioId != usuario.UsuarioId))
+                    return BadRequest(MensajeEmailDuplicado);
+
+                usuario.UsuarioEmail = emailNuevo;
+                cliente.Email = emailNuevo;
+            }
+
             cliente.Nombre    = dto.Nombre;
             cliente.Telefono  = dto.Telefono;
             cliente.Direccion = dto.Direccion;
@@ -107,10 +138,44 @@ namespace PlayaAutos.API.Controllers
             }
             catch (DbUpdateException)
             {
-                // Índice único de CI_RUC: otro cliente lo registró al mismo tiempo.
-                return BadRequest(MensajeCiDuplicado);
+                // Índices únicos (CI_RUC o email): otra cuenta lo registró al mismo tiempo.
+                return BadRequest(cambiaEmail ? MensajeEmailDuplicado : MensajeCiDuplicado);
             }
-            return Ok(new { cliente.ClienteId, cliente.CI_RUC });
+
+            // El email viaja dentro del token: si cambió, se entrega uno nuevo
+            // para que la app quede con la sesión al día.
+            return Ok(new
+            {
+                cliente.ClienteId,
+                cliente.CI_RUC,
+                Email = cliente.Email,
+                Token = cambiaEmail ? _jwt.GenerarToken(usuario) : null
+            });
+        }
+
+        // PUT: api/micuenta/contrasena — cambio de contraseña con la sesión iniciada.
+        [HttpPut("contrasena")]
+        public async Task<IActionResult> CambiarContrasena(CambiarContrasenaDto dto)
+        {
+            var uid = GetUsuarioId();
+            if (uid == null) return Unauthorized();
+
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.UsuarioId == uid);
+            if (usuario == null) return Unauthorized();
+
+            if (string.IsNullOrEmpty(dto.PasswordActual))
+                return BadRequest("Ingresá tu contraseña actual.");
+            if (!Contrasenas.Coincide(dto.PasswordActual, usuario.PasswordHash))
+                return BadRequest("La contraseña actual no es correcta.");
+
+            var error = RecuperacionContrasenaService.ValidarPassword(dto.NuevaPassword);
+            if (error != null) return BadRequest(error);
+            if (dto.NuevaPassword == dto.PasswordActual)
+                return BadRequest("La nueva contraseña tiene que ser distinta de la actual.");
+
+            usuario.PasswordHash = Contrasenas.Hash(dto.NuevaPassword);
+            await _context.SaveChangesAsync();
+            return Ok(new { mensaje = "Contraseña actualizada." });
         }
 
         // POST: api/micuenta/dispositivos — registra (o reasigna) el token FCM

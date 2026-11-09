@@ -16,6 +16,12 @@ namespace PlayaAutos.API.Models
         public string Estado { get; set; } = "Pendiente";
         public DateTime? FechaRegistroPago { get; set; }
 
+        /// <summary>Cuándo se avisó al cliente que la cuota vence en pocos días (null = todavía no).</summary>
+        public DateTime? RecordatorioPrevioEnviado { get; set; }
+
+        /// <summary>Cuándo se avisó al cliente que la cuota vence hoy (null = todavía no).</summary>
+        public DateTime? RecordatorioVencimientoEnviado { get; set; }
+
         public Venta Venta { get; set; } = null!;
         public FormaPago? FormaPago { get; set; }
         public MovimientoCaja? MovimientoCaja { get; set; }

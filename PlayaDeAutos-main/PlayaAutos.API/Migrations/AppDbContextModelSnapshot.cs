@@ -302,6 +302,12 @@ namespace PlayaAutos.API.Migrations
                     b.Property<string>("ObservacionPago")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("RecordatorioPrevioEnviado")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RecordatorioVencimientoEnviado")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("VentaId")
                         .HasColumnType("int");
 
@@ -834,6 +840,41 @@ namespace PlayaAutos.API.Migrations
                     b.HasIndex("VentaId");
 
                     b.ToTable("PagosVenta");
+                });
+
+            modelBuilder.Entity("PlayaAutos.API.Models.RecuperacionContrasena", b =>
+                {
+                    b.Property<int>("RecuperacionContrasenaId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RecuperacionContrasenaId"));
+
+                    b.Property<string>("CodigoHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaExpiracion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaUso")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Intentos")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RecuperacionContrasenaId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("RecuperacionesContrasena", (string)null);
                 });
 
             modelBuilder.Entity("PlayaAutos.API.Models.SolicitudPagoCuota", b =>
@@ -1596,6 +1637,17 @@ namespace PlayaAutos.API.Migrations
                     b.Navigation("TasacionVehiculo");
 
                     b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("PlayaAutos.API.Models.RecuperacionContrasena", b =>
+                {
+                    b.HasOne("PlayaAutos.API.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("PlayaAutos.API.Models.SolicitudPagoCuota", b =>

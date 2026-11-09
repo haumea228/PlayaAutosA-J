@@ -53,5 +53,15 @@ namespace PlayaAutos.API.DTOs
         /// única vez). Para corregirlo después, lo hace un administrador desde la web.
         /// </summary>
         public string? CI_RUC { get; set; }
+
+        /// <summary>
+        /// Opcional. Si viene distinto del actual, cambia el email de la cuenta
+        /// (es también el usuario para iniciar sesión): exige PasswordActual y
+        /// que el nuevo email no esté usado por otra cuenta.
+        /// </summary>
+        public string? Email { get; set; }
+
+        /// <summary>Contraseña actual; obligatoria solo para cambiar el email.</summary>
+        public string? PasswordActual { get; set; }
     }
 }

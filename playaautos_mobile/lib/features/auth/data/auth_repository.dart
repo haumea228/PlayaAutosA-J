@@ -54,6 +54,32 @@ class AuthRepository {
     await DioClient.clearToken();
   }
 
+  /// "¿Olvidaste tu contraseña?" paso 1: la API envía un código de 6 dígitos
+  /// al email (si tiene cuenta). Devuelve el mensaje de la API, que es el
+  /// mismo exista o no la cuenta.
+  Future<String> solicitarCodigoRecuperacion(String email) async {
+    final response = await DioClient.post(
+      'Auth/olvide-contrasena',
+      data: {'email': email},
+    );
+    final body = response.data;
+    return body is Map<String, dynamic> && body['mensaje'] is String
+        ? body['mensaje'] as String
+        : 'Te enviamos un código a tu email.';
+  }
+
+  /// Paso 2: código recibido + nueva contraseña.
+  Future<void> restablecerContrasena({
+    required String email,
+    required String codigo,
+    required String nuevaPassword,
+  }) async {
+    await DioClient.post(
+      'Auth/restablecer-contrasena',
+      data: {'email': email, 'codigo': codigo, 'nuevaPassword': nuevaPassword},
+    );
+  }
+
   Future<String?> getToken() {
     return DioClient.getToken();
   }
@@ -96,7 +122,13 @@ class AuthRepository {
       return null;
     }
 
-    return UserModel(id: id, email: email, nombre: nombre, rol: rol, token: token);
+    return UserModel(
+      id: id,
+      email: email,
+      nombre: nombre,
+      rol: rol,
+      token: token,
+    );
   }
 
   Map<String, dynamic> _decodeJwtPayload(String token) {

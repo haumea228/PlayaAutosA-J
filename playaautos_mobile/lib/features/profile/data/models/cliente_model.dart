@@ -67,6 +67,7 @@ class ClienteModel {
     String? nombre,
     String? ciRuc,
     String? telefono,
+    String? email,
     String? direccion,
   }) {
     return ClienteModel(
@@ -74,7 +75,7 @@ class ClienteModel {
       nombre: nombre ?? this.nombre,
       ciRuc: ciRuc ?? this.ciRuc,
       telefono: telefono ?? this.telefono,
-      email: email,
+      email: email ?? this.email,
       direccion: direccion ?? this.direccion,
       rangoPrecioMin: rangoPrecioMin,
       rangoPrecioMax: rangoPrecioMax,

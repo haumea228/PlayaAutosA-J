@@ -44,6 +44,7 @@ namespace PlayaAutos.API.Data
 
         // Notificaciones push (tokens FCM de la app)
         public DbSet<DispositivoNotificacion> DispositivosNotificacion { get; set; }
+        public DbSet<RecuperacionContrasena> RecuperacionesContrasena { get; set; }
 
         // Tasaciones
         public DbSet<TasacionVehiculo> TasacionesVehiculo { get; set; }
@@ -303,6 +304,18 @@ namespace PlayaAutos.API.Data
                 e.HasOne(d => d.Usuario)
                     .WithMany()
                     .HasForeignKey(d => d.UsuarioId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RecuperacionContrasena>(e =>
+            {
+                e.ToTable("RecuperacionesContrasena");
+                e.HasKey(r => r.RecuperacionContrasenaId);
+                e.Property(r => r.CodigoHash).HasMaxLength(64).IsRequired();
+                e.HasIndex(r => r.UsuarioId);
+                e.HasOne(r => r.Usuario)
+                    .WithMany()
+                    .HasForeignKey(r => r.UsuarioId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

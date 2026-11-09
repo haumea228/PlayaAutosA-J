@@ -8,6 +8,7 @@ import '../../../../core/config/api_config.dart';
 import '../../data/models/foto_vehiculo_model.dart';
 import '../../data/models/vehiculo_model.dart';
 import '../providers/catalogo_provider.dart';
+import '../widgets/visor_fotos.dart';
 
 class DetalleVehiculoScreen extends ConsumerWidget {
   const DetalleVehiculoScreen({super.key, required this.vehiculoId});
@@ -18,9 +19,7 @@ class DetalleVehiculoScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final id = int.tryParse(vehiculoId);
     if (id == null) {
-      return const Scaffold(
-        body: Center(child: Text('Vehículo inválido')),
-      );
+      return const Scaffold(body: Center(child: Text('Vehículo inválido')));
     }
 
     final vehiculoAsync = ref.watch(detalleVehiculoProvider(id));
@@ -61,6 +60,10 @@ class _DetalleContent extends StatelessWidget {
 
   final VehiculoModel vehiculo;
 
+  /// Valor o guion si falta el dato.
+  static String _o(String? valor) =>
+      valor == null || valor.trim().isEmpty ? '—' : valor.trim();
+
   @override
   Widget build(BuildContext context) {
     final formato = NumberFormat.decimalPattern('es');
@@ -82,29 +85,53 @@ class _DetalleContent extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '₲ ${formato.format(vehiculo.precioVenta)}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
+                  style: Theme.of(context).textTheme.titleLarge
                       ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _DatoFila(label: 'Año', valor: '${vehiculo.anio}'),
-                _DatoFila(label: 'Color', valor: vehiculo.color ?? '—'),
+                _DatoFila(
+                  label: 'Condición',
+                  valor: _o(vehiculo.condicionDescripcion),
+                ),
+                _DatoFila(label: 'Tipo', valor: _o(vehiculo.tipoDescripcion)),
+                _DatoFila(label: 'Color', valor: _o(vehiculo.color)),
                 _DatoFila(
                   label: 'Kilometraje',
                   valor: vehiculo.kilometraje != null
                       ? '${formato.format(vehiculo.kilometraje)} km'
                       : '—',
                 ),
-                if (vehiculo.descripcion != null &&
-                    vehiculo.descripcion!.isNotEmpty) ...[
+                if (vehiculo.tieneFichaTecnica) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Características técnicas',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  _DatoFila(
+                    label: 'Transmisión',
+                    valor: _o(vehiculo.transmision),
+                  ),
+                  _DatoFila(
+                    label: 'Combustible',
+                    valor: _o(vehiculo.combustible),
+                  ),
+                  _DatoFila(label: 'Motor', valor: _o(vehiculo.motor)),
+                  _DatoFila(label: 'Tracción', valor: _o(vehiculo.traccion)),
+                  _DatoFila(
+                    label: 'Puertas',
+                    valor: vehiculo.cantidadPuertas?.toString() ?? '—',
+                  ),
+                ],
+                if (vehiculo.descripcionSinFicha case final descripcion?) ...[
                   const SizedBox(height: 16),
                   Text(
                     'Descripción',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
-                  Text(vehiculo.descripcion!),
+                  Text(descripcion),
                 ],
                 const SizedBox(height: 24),
                 SizedBox(
@@ -163,21 +190,43 @@ class _GaleriaFotosState extends State<_GaleriaFotos> {
           PageView.builder(
             itemCount: widget.fotos.length,
             onPageChanged: (index) => setState(() => _paginaActual = index),
-            itemBuilder: (context, index) => CachedNetworkImage(
-              imageUrl:
-                  '${ApiConfig.mediaBaseUrl}${widget.fotos[index].url}',
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: colors.secondaryContainer,
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+            // Tocar una foto la abre a pantalla completa con zoom.
+            itemBuilder: (context, index) => GestureDetector(
+              onTap: () => abrirVisorFotos(context, widget.fotos, index),
+              child: CachedNetworkImage(
+                imageUrl: '${ApiConfig.mediaBaseUrl}${widget.fotos[index].url}',
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: colors.secondaryContainer,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: colors.secondaryContainer,
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: colors.onSecondaryContainer,
+                  ),
                 ),
               ),
-              errorWidget: (context, url, error) => Container(
-                color: colors.secondaryContainer,
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  color: colors.onSecondaryContainer,
+            ),
+          ),
+          // Indicio de que la foto se puede ampliar.
+          Positioned(
+            top: 10,
+            right: 10,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Icon(
+                  Icons.zoom_out_map,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
             ),
@@ -236,9 +285,7 @@ class _DatoFila extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
+              style: Theme.of(context).textTheme.bodyMedium
                   ?.copyWith(color: Theme.of(context).colorScheme.outline),
             ),
           ),

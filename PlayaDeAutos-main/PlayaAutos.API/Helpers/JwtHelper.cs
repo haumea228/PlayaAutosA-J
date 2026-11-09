@@ -34,11 +34,24 @@ namespace PlayaAutos.API.Helpers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(8),
+                expires: DateTime.Now.Add(Duracion(usuario.Rol)),
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        /// <summary>
+        /// Los clientes usan la app en su propio celular y esperan seguir con la
+        /// sesión iniciada al volver a abrirla (sesión persistente): su token dura
+        /// Jwt:DiasSesionCliente (30 días por defecto). El personal trabaja en la
+        /// web, a veces en equipos compartidos: 8 horas, como siempre.
+        /// </summary>
+        private TimeSpan Duracion(string rol)
+        {
+            if (rol != "Cliente") return TimeSpan.FromHours(8);
+            var dias = int.TryParse(_config["Jwt:DiasSesionCliente"], out var d) && d > 0 ? d : 30;
+            return TimeSpan.FromDays(dias);
         }
     }
 }

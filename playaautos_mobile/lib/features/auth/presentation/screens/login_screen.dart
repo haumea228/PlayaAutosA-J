@@ -122,7 +122,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 24),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: isLoading
+                                    ? null
+                                    : () => context.push(
+                                        '/recuperar-contrasena',
+                                        extra: _emailController.text.trim(),
+                                      ),
+                                child: const Text('¿Olvidaste tu contraseña?'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             FilledButton(
                               onPressed: isLoading ? null : _submit,
                               child: isLoading

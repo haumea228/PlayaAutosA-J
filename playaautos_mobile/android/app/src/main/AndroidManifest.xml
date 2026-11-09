@@ -11,7 +11,7 @@
     <!-- Android 13+ (API 33): permiso para mostrar notificaciones push. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:label="playaautos_mobile"
+        android:label="A&amp;J Autos"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:networkSecurityConfig="@xml/network_security_config">

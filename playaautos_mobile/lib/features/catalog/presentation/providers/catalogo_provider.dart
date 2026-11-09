@@ -28,6 +28,7 @@ class FiltroCatalogo {
   const FiltroCatalogo({
     this.busqueda,
     this.marca,
+    this.modelo,
     this.tipo,
     this.precioMin,
     this.precioMax,
@@ -35,6 +36,9 @@ class FiltroCatalogo {
 
   final String? busqueda;
   final String? marca;
+
+  /// Solo tiene sentido con una marca elegida: al cambiar la marca se limpia.
+  final String? modelo;
   final String? tipo;
   final int? precioMin;
   final int? precioMax;
@@ -42,16 +46,19 @@ class FiltroCatalogo {
   FiltroCatalogo copyWith({
     String? busqueda,
     String? marca,
+    String? modelo,
     String? tipo,
     int? precioMin,
     int? precioMax,
     bool clearBusqueda = false,
     bool clearMarca = false,
+    bool clearModelo = false,
     bool clearTipo = false,
   }) {
     return FiltroCatalogo(
       busqueda: clearBusqueda ? null : (busqueda ?? this.busqueda),
       marca: clearMarca ? null : (marca ?? this.marca),
+      modelo: clearModelo ? null : (modelo ?? this.modelo),
       tipo: clearTipo ? null : (tipo ?? this.tipo),
       precioMin: precioMin ?? this.precioMin,
       precioMax: precioMax ?? this.precioMax,

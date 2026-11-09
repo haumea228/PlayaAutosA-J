@@ -47,8 +47,13 @@ namespace PlayaAutos.API.Controllers
             });
         }
 
-        // POST: api/auth/registro (solo para crear el primer admin)
+        // POST: api/auth/registro — crea un usuario AdministradorP. Solo un
+        // administrador con sesión iniciada puede usarlo (antes era público y
+        // cualquiera podía crearse una cuenta de administrador). El primer
+        // admin lo crea la API al arrancar con la base vacía (Program.cs), y
+        // el resto del personal se da de alta desde la web (api/usuarios).
         [HttpPost("registro")]
+        [Microsoft.AspNetCore.Authorization.Authorize(Roles = "AdministradorP")]
         public async Task<IActionResult> Registro(LoginDto dto)
         {
             if (await _context.Usuarios.AnyAsync(u => u.UsuarioEmail == dto.Email))
@@ -117,6 +122,41 @@ namespace PlayaAutos.API.Controllers
                 await transaction.RollbackAsync();
                 return StatusCode(500, "Error al crear la cuenta. Intentá nuevamente.");
             }
+        }
+
+        public const string PoliticaRecuperacion = "recuperacion-contrasena";
+        private const string MensajeCodigoEnviado =
+            "Si el email corresponde a una cuenta, te enviamos un código de 6 dígitos. Revisá tu correo (también la carpeta de spam).";
+
+        // POST: api/auth/olvide-contrasena — envía un código por email.
+        // Responde siempre lo mismo para no revelar qué emails tienen cuenta.
+        [HttpPost("olvide-contrasena")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(PoliticaRecuperacion)]
+        public async Task<IActionResult> OlvideContrasena(OlvideContrasenaDto dto,
+            [FromServices] Services.RecuperacionContrasenaService recuperacion)
+        {
+            if (!recuperacion.Habilitado)
+                return StatusCode(503, "La recuperación de contraseña no está disponible por ahora. Comunicate con la playa.");
+
+            await recuperacion.SolicitarAsync(dto.Email);
+            return Ok(new { mensaje = MensajeCodigoEnviado });
+        }
+
+        // POST: api/auth/restablecer-contrasena — código + nueva contraseña.
+        [HttpPost("restablecer-contrasena")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting(PoliticaRecuperacion)]
+        public async Task<IActionResult> RestablecerContrasena(RestablecerContrasenaDto dto,
+            [FromServices] Services.RecuperacionContrasenaService recuperacion)
+        {
+            var error = Services.RecuperacionContrasenaService.ValidarPassword(dto.NuevaPassword);
+            if (error != null) return BadRequest(error);
+
+            return await recuperacion.RestablecerAsync(dto.Email, dto.Codigo, dto.NuevaPassword) switch
+            {
+                Services.ResultadoRestablecer.Ok => Ok(new { mensaje = "Listo, ya podés iniciar sesión con tu nueva contraseña." }),
+                Services.ResultadoRestablecer.DemasiadosIntentos => BadRequest("Hiciste demasiados intentos con ese código. Pedí uno nuevo."),
+                _ => BadRequest("El código no es correcto o ya venció.")
+            };
         }
 
         private static string HashPassword(string password)

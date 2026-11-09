@@ -159,6 +159,7 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
         if (!texto.contains(query)) return false;
       }
       if (filtro.marca != null && v.marcaNombre != filtro.marca) return false;
+      if (filtro.modelo != null && v.modeloNombre != filtro.modelo) return false;
       if (filtro.tipo != null && v.tipoDescripcion != filtro.tipo) return false;
       if (filtro.precioMin != null && v.precioVenta < filtro.precioMin!) {
         return false;

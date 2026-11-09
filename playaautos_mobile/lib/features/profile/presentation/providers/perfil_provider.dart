@@ -17,11 +17,15 @@ class ActualizarPerfilState {
     this.isLoading = false,
     this.error,
     this.success = false,
+    this.emailCambiado = false,
   });
 
   final bool isLoading;
   final String? error;
   final bool success;
+
+  /// El guardado cambió el email de la cuenta (el usuario para iniciar sesión).
+  final bool emailCambiado;
 }
 
 class ActualizarPerfilNotifier extends StateNotifier<ActualizarPerfilState> {
@@ -31,14 +35,23 @@ class ActualizarPerfilNotifier extends StateNotifier<ActualizarPerfilState> {
   final Ref _ref;
   final ProfileRepository _repository;
 
-  Future<void> actualizar(ClienteModel cliente) async {
+  Future<void> actualizar(
+    ClienteModel cliente, {
+    String? passwordActual,
+  }) async {
     state = const ActualizarPerfilState(isLoading: true);
     try {
-      await _repository.actualizarPerfil(cliente);
+      final emailCambiado = await _repository.actualizarPerfil(
+        cliente,
+        passwordActual: passwordActual,
+      );
       // perfilProvider vuelve a pedir /micuenta/perfil, así que el resto de
       // la app (ej. el prefill de agendar_cita_screen) ve los datos nuevos.
       _ref.invalidate(perfilProvider);
-      state = const ActualizarPerfilState(success: true);
+      state = ActualizarPerfilState(
+        success: true,
+        emailCambiado: emailCambiado,
+      );
     } on DioException catch (e) {
       state = ActualizarPerfilState(
         error: e.message ?? 'No se pudo actualizar el perfil.',
@@ -51,5 +64,8 @@ final actualizarPerfilProvider =
     StateNotifierProvider<ActualizarPerfilNotifier, ActualizarPerfilState>((
       ref,
     ) {
-      return ActualizarPerfilNotifier(ref, ref.watch(profileRepositoryProvider));
+      return ActualizarPerfilNotifier(
+        ref,
+        ref.watch(profileRepositoryProvider),
+      );
     });

@@ -64,7 +64,7 @@ class _PlayaAutosAppState extends ConsumerState<PlayaAutosApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'PlayaAutos',
+      title: 'A&J Autos',
       debugShowCheckedModeBanner: false,
       // Calendarios, diálogos y textos de los componentes de Flutter en
       // español (sin esto, showDatePicker mostraba "Select date", "Cancel"...).

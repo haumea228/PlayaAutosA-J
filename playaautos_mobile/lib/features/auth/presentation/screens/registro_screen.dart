@@ -47,9 +47,8 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
       if (next is AuthAuthenticated) {
         context.go('/catalogo');
       } else if (next is AuthError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.message)));
       }
     });
 
@@ -67,7 +66,9 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
               children: [
                 TextFormField(
                   controller: _nombreController,
-                  decoration: const InputDecoration(labelText: 'Nombre completo'),
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre completo',
+                  ),
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Ingresá tu nombre'
                       : null,
@@ -76,8 +77,9 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                 TextFormField(
                   controller: _telefonoController,
                   keyboardType: TextInputType.phone,
-                  decoration:
-                      const InputDecoration(labelText: 'Teléfono (opcional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Teléfono (opcional)',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -114,8 +116,9 @@ class _RegistroScreenState extends ConsumerState<RegistroScreen> {
                 TextFormField(
                   controller: _confirmarPasswordController,
                   obscureText: true,
-                  decoration:
-                      const InputDecoration(labelText: 'Confirmar contraseña'),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmar contraseña',
+                  ),
                   validator: (value) {
                     if (value != _passwordController.text) {
                       return 'Las contraseñas no coinciden';

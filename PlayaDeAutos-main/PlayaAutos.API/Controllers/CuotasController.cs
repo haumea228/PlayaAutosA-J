@@ -356,6 +356,17 @@ namespace PlayaAutos.API.Controllers
         }
 
         // GET: api/cuotas/5/ticket
+        // POST: api/cuotas/recordatorios/enviar — ejecuta ahora la revisión de
+        // vencimientos que la API ya hace sola cada hora (útil para probar o
+        // para una demostración). Cada aviso se envía una sola vez por cuota.
+        [HttpPost("recordatorios/enviar")]
+        [Authorize(Roles = "AdministradorP")]
+        public async Task<IActionResult> EnviarRecordatorios([FromServices] RecordatoriosCuotaService recordatorios)
+        {
+            var enviados = await recordatorios.EnviarPendientesAsync(HttpContext.RequestAborted);
+            return Ok(new { enviados });
+        }
+
         [HttpGet("{id}/ticket")]
         public async Task<IActionResult> DescargarTicket(int id)
         {

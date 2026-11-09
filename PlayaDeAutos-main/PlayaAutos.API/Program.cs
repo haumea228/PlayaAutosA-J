@@ -21,6 +21,16 @@ builder.Services.AddSingleton<PlayaAutos.API.Services.ComprobanteStorage>();
 builder.Services.AddSingleton<PlayaAutos.API.Services.FirebasePushSender>();
 builder.Services.AddScoped<PlayaAutos.API.Services.NotificacionesService>();
 
+// Emails (Gmail de la empresa por SMTP) y recuperación de contraseña con código
+builder.Services.Configure<PlayaAutos.API.Services.CorreoOptions>(builder.Configuration.GetSection("Correo"));
+builder.Services.AddSingleton<PlayaAutos.API.Services.CorreoService>();
+builder.Services.AddScoped<PlayaAutos.API.Services.RecuperacionContrasenaService>();
+
+// Recordatorios push de cuotas próximas a vencer (revisión periódica en segundo plano)
+builder.Services.Configure<PlayaAutos.API.Services.RecordatoriosOptions>(builder.Configuration.GetSection("Recordatorios"));
+builder.Services.AddScoped<PlayaAutos.API.Services.RecordatoriosCuotaService>();
+builder.Services.AddHostedService<PlayaAutos.API.Services.RecordatoriosCuotaWorker>();
+
 // Pago de cuotas con tarjeta (Stripe Checkout, entorno de pruebas)
 builder.Services.Configure<PlayaAutos.API.Services.PagosOptions>(builder.Configuration.GetSection("Pagos"));
 builder.Services.AddSingleton<PlayaAutos.API.Services.StripeGateway>();
@@ -41,6 +51,17 @@ builder.Services.AddRateLimiter(o =>
             _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
                 PermitLimit = 6,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+    // Recuperación de contraseña: frena el envío masivo de emails y que se
+    // prueben códigos al azar (además del límite de intentos por código).
+    o.AddPolicy(PlayaAutos.API.Controllers.AuthController.PoliticaRecuperacion, ctx =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocido",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
                 Window = TimeSpan.FromMinutes(1),
                 QueueLimit = 0
             }));

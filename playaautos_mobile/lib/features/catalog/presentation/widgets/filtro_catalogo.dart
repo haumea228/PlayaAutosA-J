@@ -31,6 +31,20 @@ class FiltroCatalogoWidget extends ConsumerWidget {
       orElse: () => const <String>[],
     );
 
+    // Modelos de la marca elegida, también derivados del catálogo cargado.
+    final modelos = filtro.marca == null
+        ? const <String>[]
+        : catalogoAsync.maybeWhen(
+            data: (vehiculos) => (vehiculos
+                    .where((v) => v.marcaNombre == filtro.marca)
+                    .map((v) => v.modeloNombre)
+                    .where((m) => m.isNotEmpty)
+                    .toSet()
+                    .toList()
+                  ..sort()),
+            orElse: () => const <String>[],
+          );
+
     void actualizar(FiltroCatalogo Function(FiltroCatalogo) update) {
       ref.read(filtroProvider.notifier).state = update(filtro);
     }
@@ -55,8 +69,14 @@ class FiltroCatalogoWidget extends ConsumerWidget {
                           child: Text(marca.nombre),
                         ),
                     ],
+                    // Cambiar de marca limpia el modelo (el anterior no
+                    // pertenece a la marca nueva).
                     onChanged: (value) => actualizar(
-                      (f) => f.copyWith(marca: value, clearMarca: value == null),
+                      (f) => f.copyWith(
+                        marca: value,
+                        clearMarca: value == null,
+                        clearModelo: true,
+                      ),
                     ),
                   ),
                   loading: () => const LinearProgressIndicator(),
@@ -65,20 +85,46 @@ class FiltroCatalogoWidget extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
+                // La key depende de la marca: DropdownButtonFormField solo lee
+                // initialValue al crearse, así que al cambiar de marca se
+                // recrea y vuelve a "Todos".
                 child: DropdownButtonFormField<String>(
-                  initialValue: filtro.tipo,
-                  decoration: const InputDecoration(labelText: 'Tipo'),
+                  key: ValueKey('modelo-${filtro.marca}'),
+                  initialValue: filtro.modelo,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Modelo',
+                    hintText: filtro.marca == null ? 'Elegí una marca' : null,
+                  ),
                   items: [
                     const DropdownMenuItem<String>(child: Text('Todos')),
-                    for (final tipo in tipos)
-                      DropdownMenuItem(value: tipo, child: Text(tipo)),
+                    for (final modelo in modelos)
+                      DropdownMenuItem(
+                        value: modelo,
+                        child: Text(modelo, overflow: TextOverflow.ellipsis),
+                      ),
                   ],
-                  onChanged: (value) => actualizar(
-                    (f) => f.copyWith(tipo: value, clearTipo: value == null),
-                  ),
+                  onChanged: filtro.marca == null
+                      ? null
+                      : (value) => actualizar(
+                            (f) => f.copyWith(modelo: value, clearModelo: value == null),
+                          ),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: filtro.tipo,
+            decoration: const InputDecoration(labelText: 'Tipo'),
+            items: [
+              const DropdownMenuItem<String>(child: Text('Todos')),
+              for (final tipo in tipos)
+                DropdownMenuItem(value: tipo, child: Text(tipo)),
+            ],
+            onChanged: (value) => actualizar(
+              (f) => f.copyWith(tipo: value, clearTipo: value == null),
+            ),
           ),
           const SizedBox(height: 8),
           Text('Rango de precio (₲)', style: Theme.of(context).textTheme.labelMedium),

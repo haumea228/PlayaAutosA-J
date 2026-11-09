@@ -11,19 +11,49 @@ class ProfileRepository {
     return ClienteModel.fromJson(response.data as Map<String, dynamic>);
   }
 
-  /// PUT /api/micuenta/perfil acepta nombre/telefono/direccion y el CI/RUC,
-  /// este último SOLO si el cliente todavía no lo tenía (se carga una única
-  /// vez; si ya existe, la API rechaza cualquier cambio). Email y rangoPrecio
-  /// no son editables por el cliente.
-  Future<void> actualizarPerfil(ClienteModel cliente) async {
+  /// Cambio de contraseña con la sesión iniciada: la API verifica la actual.
+  Future<void> cambiarContrasena({
+    required String actual,
+    required String nueva,
+  }) async {
     await DioClient.put(
+      'MiCuenta/contrasena',
+      data: {'passwordActual': actual, 'nuevaPassword': nueva},
+    );
+  }
+
+  /// PUT /api/micuenta/perfil acepta nombre/telefono/direccion, el CI/RUC
+  /// (SOLO si el cliente todavía no lo tenía: se carga una única vez) y el
+  /// email. El email es también el usuario para iniciar sesión: para
+  /// cambiarlo la API exige la contraseña actual ([passwordActual]) y que no
+  /// esté usado por otra cuenta, y devuelve un token nuevo (el email viaja en
+  /// el token), que se guarda acá para que la sesión siga al día.
+  ///
+  /// Devuelve true si el email cambió.
+  Future<bool> actualizarPerfil(
+    ClienteModel cliente, {
+    String? passwordActual,
+  }) async {
+    final response = await DioClient.put(
       'MiCuenta/perfil',
       data: {
         'nombre': cliente.nombre,
         'telefono': cliente.telefono ?? '',
         'direccion': cliente.direccion ?? '',
         if (cliente.tieneCiRuc) 'cI_RUC': cliente.ciRuc,
+        'email': ?cliente.email,
+        'passwordActual': ?passwordActual,
       },
     );
+
+    final body = response.data;
+    final token = body is Map<String, dynamic>
+        ? body['token'] as String?
+        : null;
+    if (token != null && token.isNotEmpty) {
+      await DioClient.setToken(token);
+      return true;
+    }
+    return false;
   }
 }

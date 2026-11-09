@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,7 @@ import '../../../../core/services/gps_service.dart';
 import '../../../../shared/utils/validators.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/cliente_model.dart';
+import '../../data/profile_repository.dart';
 import '../providers/perfil_provider.dart';
 
 class PerfilScreen extends ConsumerStatefulWidget {
@@ -26,6 +28,7 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
   final _nombreController = TextEditingController();
   final _ciRucController = TextEditingController();
   final _telefonoController = TextEditingController();
+  final _emailController = TextEditingController();
   final _direccionController = TextEditingController();
 
   final _camera = CameraService();
@@ -50,6 +53,7 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
     _nombreController.dispose();
     _ciRucController.dispose();
     _telefonoController.dispose();
+    _emailController.dispose();
     _direccionController.dispose();
     super.dispose();
   }
@@ -147,6 +151,17 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
       }
     }
 
+    // El email es también el usuario para iniciar sesión: si cambia, se pide
+    // la contraseña actual (la API la verifica) antes de guardar.
+    final emailNuevo = _emailController.text.trim();
+    final cambiaEmail =
+        emailNuevo.toLowerCase() != (actual.email ?? '').trim().toLowerCase();
+    String? passwordActual;
+    if (cambiaEmail) {
+      passwordActual = await _pedirContrasena(emailNuevo);
+      if (passwordActual == null || !mounted) return;
+    }
+
     ref
         .read(actualizarPerfilProvider.notifier)
         .actualizar(
@@ -154,39 +169,64 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
             nombre: _nombreController.text.trim(),
             ciRuc: ciNuevo,
             telefono: _telefonoController.text.trim(),
+            email: emailNuevo,
             direccion: _direccionController.text.trim(),
           ),
+          passwordActual: passwordActual,
         );
+  }
+
+  /// Confirmación del cambio de email con la contraseña actual. Devuelve la
+  /// contraseña, o null si el cliente cancela.
+  Future<String?> _pedirContrasena(String emailNuevo) {
+    return showDialog<String>(
+      context: context,
+      builder: (_) => _DialogoContrasena(emailNuevo: emailNuevo),
+    );
   }
 
   Future<void> _solicitarCorreccionCi(ClienteModel perfil) async {
     final abierto = await Contacto.abrirEmail(
       asunto: 'Corrección de CI/RUC — Cliente N° ${perfil.id}',
-      cuerpo: 'Hola, solicito la corrección de mi CI/RUC.\n\n'
+      cuerpo:
+          'Hola, solicito la corrección de mi CI/RUC.\n\n'
           'Nombre: ${perfil.nombre}\n'
           'Email de la cuenta: ${perfil.email ?? '-'}\n'
           'CI/RUC registrado: ${perfil.ciRuc}\n'
           'CI/RUC correcto: \n\n'
           'Gracias.',
     );
-    if (!abierto) _avisoSinApp('No se encontró una app de correo. Escribinos a ${Contacto.email}.');
+    if (!abierto) {
+      _avisoSinApp(
+        'No se encontró una app de correo. Escribinos a ${Contacto.email}.',
+      );
+    }
   }
 
   Future<void> _abrirWhatsApp() async {
     final abierto = await Contacto.abrirWhatsApp(
       mensaje: 'Hola, les escribo desde la app de A&J Autos Usados.',
     );
-    if (!abierto) _avisoSinApp('No se pudo abrir WhatsApp. Nuestro número es ${Contacto.telefono}.');
+    if (!abierto) {
+      _avisoSinApp(
+        'No se pudo abrir WhatsApp. Nuestro número es ${Contacto.telefono}.',
+      );
+    }
   }
 
   Future<void> _abrirEmailContacto() async {
     final abierto = await Contacto.abrirEmail(asunto: 'Consulta desde la app');
-    if (!abierto) _avisoSinApp('No se encontró una app de correo. Escribinos a ${Contacto.email}.');
+    if (!abierto) {
+      _avisoSinApp(
+        'No se encontró una app de correo. Escribinos a ${Contacto.email}.',
+      );
+    }
   }
 
   void _avisoSinApp(String mensaje) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
   Future<void> _abrirUbicacionAgencia() async {
@@ -198,6 +238,20 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('No se pudo abrir Maps.')));
       }
+    }
+  }
+
+  Future<void> _cambiarContrasena() async {
+    final cambiada = await showDialog<bool>(
+      context: context,
+      builder: (_) => _DialogoCambiarContrasena(
+        repositorio: ref.read(profileRepositoryProvider),
+      ),
+    );
+    if (cambiada == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Contraseña actualizada.')));
     }
   }
 
@@ -248,6 +302,7 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
       _nombreController.text = perfilCargado.nombre;
       _ciRucController.text = perfilCargado.ciRuc ?? '';
       _telefonoController.text = perfilCargado.telefono ?? '';
+      _emailController.text = perfilCargado.email ?? '';
       _direccionController.text = perfilCargado.direccion ?? '';
       _fotoPerfil = null;
       _cargarFotoGuardada(perfilCargado.id);
@@ -266,12 +321,17 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
     ) {
       if (!context.mounted) return;
       if (next.error != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error!)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(next.error!)));
       } else if (next.success && previous?.success != true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Perfil actualizado correctamente.')),
+          SnackBar(
+            content: Text(
+              next.emailCambiado
+                  ? 'Perfil actualizado. Desde ahora iniciá sesión con tu nuevo email.'
+                  : 'Perfil actualizado correctamente.',
+            ),
+          ),
         );
       }
     });
@@ -316,9 +376,9 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                         children: [
                           CircleAvatar(
                             radius: 52,
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
                             backgroundImage: _fotoPerfil != null
                                 ? FileImage(_fotoPerfil!)
                                 : null,
@@ -326,9 +386,9 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                                 ? Icon(
                                     Icons.person,
                                     size: 52,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSecondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSecondaryContainer,
                                   )
                                 : null,
                           ),
@@ -397,7 +457,9 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                         child: TextButton.icon(
                           onPressed: () => _solicitarCorreccionCi(perfil),
                           icon: const Icon(Icons.mail_outline, size: 18),
-                          label: const Text('¿Tu CI es incorrecto? Solicitar corrección'),
+                          label: const Text(
+                            '¿Tu CI es incorrecto? Solicitar corrección',
+                          ),
                         ),
                       ),
                     const SizedBox(height: 12),
@@ -409,6 +471,20 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                           (value == null || value.trim().isEmpty)
                           ? 'Ingresá tu teléfono'
                           : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        helperText:
+                            'Es también tu usuario para iniciar sesión. '
+                            'Para cambiarlo te vamos a pedir tu contraseña.',
+                        helperMaxLines: 2,
+                      ),
+                      validator: Validators.email,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -468,13 +544,11 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     snapshot.data!,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.outline,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline,
                                         ),
                                   ),
                                 );
@@ -496,6 +570,12 @@ class _PerfilScreenState extends ConsumerState<PerfilScreen> {
                       onEmail: _abrirEmailContacto,
                     ),
                     const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _cambiarContrasena,
+                      icon: const Icon(Icons.password),
+                      label: const Text('Cambiar contraseña'),
+                    ),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: _cerrarSesion,
                       icon: const Icon(Icons.logout),
@@ -576,7 +656,10 @@ class _AcercaDeNosotros extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
-            _FilaContacto(icono: Icons.phone_outlined, texto: Contacto.telefono),
+            _FilaContacto(
+              icono: Icons.phone_outlined,
+              texto: Contacto.telefono,
+            ),
             const SizedBox(height: 4),
             _FilaContacto(icono: Icons.mail_outline, texto: Contacto.email),
             const SizedBox(height: 14),
@@ -639,6 +722,219 @@ class _FilaContacto extends StatelessWidget {
         Icon(icono, size: 18, color: colors.outline),
         const SizedBox(width: 8),
         Expanded(child: SelectableText(texto)),
+      ],
+    );
+  }
+}
+
+/// Pide la contraseña actual para confirmar el cambio de email (el email es
+/// el usuario para iniciar sesión). Devuelve la contraseña o null si se cancela.
+class _DialogoContrasena extends StatefulWidget {
+  const _DialogoContrasena({required this.emailNuevo});
+
+  final String emailNuevo;
+
+  @override
+  State<_DialogoContrasena> createState() => _DialogoContrasenaState();
+}
+
+class _DialogoContrasenaState extends State<_DialogoContrasena> {
+  final _password = TextEditingController();
+  bool _oculta = true;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    if (_password.text.isEmpty) return;
+    Navigator.of(context).pop(_password.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Cambiar email'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tu nuevo email será ${widget.emailNuevo}. Desde ahora vas a '
+              'iniciar sesión con él. Para confirmar, ingresá tu contraseña actual.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _password,
+              obscureText: _oculta,
+              autofocus: true,
+              onSubmitted: (_) => _confirmar(),
+              decoration: InputDecoration(
+                labelText: 'Contraseña actual',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: _oculta ? 'Mostrar' : 'Ocultar',
+                  icon: Icon(
+                    _oculta
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () => setState(() => _oculta = !_oculta),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+          ),
+          onPressed: _confirmar,
+          child: const Text('Confirmar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Cambio de contraseña: actual + nueva (dos veces). Envía el cambio y
+/// muestra el error de la API en el mismo diálogo. Devuelve true si se cambió.
+class _DialogoCambiarContrasena extends StatefulWidget {
+  const _DialogoCambiarContrasena({required this.repositorio});
+
+  final ProfileRepository repositorio;
+
+  @override
+  State<_DialogoCambiarContrasena> createState() =>
+      _DialogoCambiarContrasenaState();
+}
+
+class _DialogoCambiarContrasenaState extends State<_DialogoCambiarContrasena> {
+  final _form = GlobalKey<FormState>();
+  final _actual = TextEditingController();
+  final _nueva = TextEditingController();
+  final _confirmacion = TextEditingController();
+  bool _oculta = true;
+  bool _guardando = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _actual.dispose();
+    _nueva.dispose();
+    _confirmacion.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (!_form.currentState!.validate()) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    try {
+      await widget.repositorio.cambiarContrasena(
+        actual: _actual.text,
+        nueva: _nueva.text,
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(
+          () => _error = e.message ?? 'No se pudo cambiar la contraseña.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('Cambiar contraseña'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _form,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _actual,
+                obscureText: _oculta,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña actual',
+                  suffixIcon: IconButton(
+                    tooltip: _oculta ? 'Mostrar' : 'Ocultar',
+                    icon: Icon(
+                      _oculta
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                    onPressed: () => setState(() => _oculta = !_oculta),
+                  ),
+                ),
+                validator: (v) =>
+                    (v ?? '').isEmpty ? 'Ingresá tu contraseña actual' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nueva,
+                obscureText: _oculta,
+                decoration: const InputDecoration(
+                  labelText: 'Nueva contraseña',
+                ),
+                validator: Validators.password,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _confirmacion,
+                obscureText: _oculta,
+                decoration: const InputDecoration(
+                  labelText: 'Repetir contraseña',
+                ),
+                validator: (v) =>
+                    v == _nueva.text ? null : 'Las contraseñas no coinciden',
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: TextStyle(color: colors.error)),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _guardando ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+          ),
+          onPressed: _guardando ? null : _guardar,
+          child: _guardando
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Guardar'),
+        ),
       ],
     );
   }

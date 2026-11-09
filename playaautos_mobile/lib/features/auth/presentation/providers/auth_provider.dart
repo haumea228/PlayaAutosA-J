@@ -72,7 +72,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkAuthStatus() async {
     state = const AuthLoading();
     final user = await _repository.getCurrentUser();
-    state = user != null ? AuthAuthenticated(user) : const AuthUnauthenticated();
+    state = user != null
+        ? AuthAuthenticated(user)
+        : const AuthUnauthenticated();
   }
 
   Future<void> login(String email, String password) async {

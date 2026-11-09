@@ -33,6 +33,11 @@ class VehiculoModel {
     required this.modeloNombre,
     required this.tipoDescripcion,
     required this.condicionDescripcion,
+    this.transmision,
+    this.combustible,
+    this.cantidadPuertas,
+    this.motor,
+    this.traccion,
   });
 
   final int id;
@@ -52,6 +57,31 @@ class VehiculoModel {
   final String modeloNombre;
   final String tipoDescripcion;
   final String condicionDescripcion;
+
+  // Ficha técnica (columnas propias del vehículo en la API; pueden faltar en
+  // vehículos cargados antes de que existieran).
+  final String? transmision;
+  final String? combustible;
+  final int? cantidadPuertas;
+  final String? motor;
+  final String? traccion;
+
+  bool get tieneFichaTecnica =>
+      [transmision, combustible, motor, traccion].any((v) => v != null && v.isNotEmpty) ||
+      cantidadPuertas != null;
+
+  /// La API antepone a la descripción la línea "Ficha técnica: …" armada con
+  /// los mismos datos de arriba. Cuando la app los muestra en filas propias,
+  /// se quita esa línea para no repetirlos.
+  String? get descripcionSinFicha {
+    final texto = descripcion?.trim();
+    if (texto == null || texto.isEmpty) return null;
+    if (!tieneFichaTecnica || !texto.startsWith('Ficha técnica:')) return texto;
+    final corte = texto.indexOf('\n\n');
+    if (corte == -1) return null;
+    final resto = texto.substring(corte).trim();
+    return resto.isEmpty ? null : resto;
+  }
 
   factory VehiculoModel.fromJson(Map<String, dynamic> json) {
     return VehiculoModel(
@@ -74,6 +104,11 @@ class VehiculoModel {
       modeloNombre: json['modelo'] as String? ?? '',
       tipoDescripcion: json['tipo'] as String? ?? '',
       condicionDescripcion: json['condicion'] as String? ?? '',
+      transmision: json['transmision'] as String?,
+      combustible: json['combustible'] as String?,
+      cantidadPuertas: (json['cantidadPuertas'] as num?)?.toInt(),
+      motor: json['motor'] as String?,
+      traccion: json['traccion'] as String?,
     );
   }
 
@@ -96,6 +131,11 @@ class VehiculoModel {
       'modelo': modeloNombre,
       'tipo': tipoDescripcion,
       'condicion': condicionDescripcion,
+      'transmision': transmision,
+      'combustible': combustible,
+      'cantidadPuertas': cantidadPuertas,
+      'motor': motor,
+      'traccion': traccion,
     };
   }
 }

@@ -5,6 +5,7 @@ import '../../core/network/dio_client.dart';
 import '../../features/appointments/presentation/screens/agendar_cita_screen.dart';
 import '../../features/appointments/presentation/screens/mis_citas_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/recuperar_contrasena_screen.dart';
 import '../../features/auth/presentation/screens/registro_screen.dart';
 import '../../features/catalog/presentation/screens/catalogo_screen.dart';
 import '../../features/catalog/presentation/screens/detalle_vehiculo_screen.dart';
@@ -24,7 +25,11 @@ class AppRouter {
   // también es público según los objetivos del proyecto: cualquiera puede
   // explorar vehículos sin cuenta; solo citas/cuotas/archivos/perfil
   // requieren cliente autenticado.
-  static const List<String> _publicRoutes = ['/login', '/registro'];
+  static const List<String> _publicRoutes = [
+    '/login',
+    '/registro',
+    '/recuperar-contrasena',
+  ];
   static const String _publicPrefix = '/catalogo';
 
   static final GoRouter router = GoRouter(
@@ -49,11 +54,16 @@ class AppRouter {
         builder: (context, state) => const RegistroScreen(),
       ),
       GoRoute(
+        path: '/recuperar-contrasena',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            RecuperarContrasenaScreen(emailInicial: state.extra as String?),
+      ),
+      GoRoute(
         path: '/catalogo/:id',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => DetalleVehiculoScreen(
-          vehiculoId: state.pathParameters['id']!,
-        ),
+        builder: (context, state) =>
+            DetalleVehiculoScreen(vehiculoId: state.pathParameters['id']!),
       ),
       GoRoute(
         // Sin vehiculoId: "Agendar nueva cita" desde Mis Citas (consulta
@@ -66,9 +76,8 @@ class AppRouter {
         // Con vehiculoId: "Agendar cita" desde el detalle de un vehículo.
         path: '/agendar-cita/:vehiculoId',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => AgendarCitaScreen(
-          vehiculoId: state.pathParameters['vehiculoId'],
-        ),
+        builder: (context, state) =>
+            AgendarCitaScreen(vehiculoId: state.pathParameters['vehiculoId']),
       ),
       GoRoute(
         // Perfil abierto desde otra pantalla (p. ej. "Editar en Perfil" al
@@ -83,9 +92,8 @@ class AppRouter {
       GoRoute(
         path: '/pagar-cuota/:cuotaId',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => PagoCuotaScreen(
-          cuotaId: state.pathParameters['cuotaId']!,
-        ),
+        builder: (context, state) =>
+            PagoCuotaScreen(cuotaId: state.pathParameters['cuotaId']!),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -123,7 +131,8 @@ class AppRouter {
     GoRouterState state,
   ) async {
     final hasToken = (await DioClient.getToken()) != null;
-    final isPublicRoute = _publicRoutes.contains(state.matchedLocation) ||
+    final isPublicRoute =
+        _publicRoutes.contains(state.matchedLocation) ||
         state.matchedLocation.startsWith(_publicPrefix);
 
     if (!hasToken && !isPublicRoute) {
